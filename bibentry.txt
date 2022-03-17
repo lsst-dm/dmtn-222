@@ -1,0 +1,9 @@
+% bibentry template for lsst.bib in https://github.com/lsst/lsst-texmf/blob/main/texmf/bibtex/bib/lsst.bib
+
+@DocuShare{DMTN-222,
+   author = { Chris Waters },
+    title = {Calibration Generation, Verification, Acceptance, and Certification.},
+     year = 2022,
+    month = Mar,
+   handle = {DMTN-222},
+      url = {https://dmtn-222.lsst.io } }
