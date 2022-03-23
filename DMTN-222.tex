@@ -62,7 +62,7 @@ Table \ref{tab:collections} lists suggested collection names to be used.  This p
 
 \subsection{Construction}
 
-Most calibrations will be generated directly from raw exposures using the appropriate tasks and pipelines from \verb|cp_pipe|.  Table \ref{tab:inputs} lists the kind of data queries to be used for each calibration type.  CZW: How much do we want to handhold here?  N_suggested as well?
+Most calibrations will be generated directly from raw exposures using the appropriate tasks and pipelines from \verb|cp_pipe|.  Table \ref{tab:inputs} lists the kind of data queries to be used for each calibration type.  CZW: How much do we want to handhold here?  N suggested as well?
 
 To ensure all butler repositories have a consistent set of calibrations, we have decided that only one processing location should perform the construction.  This is currently the LSST development cluster at NCSA, and will move to the US Data Facility (USDF) when it becomes available.
 
@@ -76,7 +76,7 @@ Crosstalk, PTC, and linearity corrections can be constructed at this point.  If 
 
 \subsection{Verification}
 
-Once calibrations have been generated, the calibration should be compared againt a set of input exposures using the \verb|cp_verify| tasks and pipelines.  These tasks attempt to measure quality metrics from the individual calibrated exposures, and identify calibrations that fail in some regime.  The exposures used for the construction should generally be included, as this can identify problematic inputs that degrade the calibraion quality.  An example of this is saturated flat exposures, which do not flat-field well, and should not be included in the final flat calibration.
+Once calibrations have been generated, the calibration should be compared against a set of input exposures using the \verb|cp_verify| tasks and pipelines.  These tasks attempt to measure quality metrics from the individual calibrated exposures, and identify calibrations that fail in some regime.  The exposures used for the construction should generally be included, as this can identify problematic inputs that degrade the calibration quality.  An example of this is saturated flat exposures, which do not flat-field well, and should not be included in the final flat calibration.
 
 Adding exposures from outside the set used for construction can provide insight into the expected validity range for the calibration.  As long as the metrics on those exposures remain within the limits defined in DMTN-101, then the calibration should be valid for the dates those exposures were taken.  This is similar to the second type of monitoring with the daily calibrations, discussed below.
 
@@ -117,14 +117,14 @@ When calibrations have been generated, validated, approved, and certified at the
 butler export-calibs $REPO ./export_directory LATISS/calib/DM-XYZ LATISS/calib/DM-ABC [...]
 \end{verbatim}
 
-This command exports the files into the `export_directory` location, and constructs a YAML description of the calibrations and their collections.  This `export_directory` must then be transferred to the host of the new repository, where it can be imported with the command
+This command exports the files into the \verb|export_directory| location, and constructs a YAML description of the calibrations and their collections.  This \verb|export_directory| must then be transferred to the host of the new repository, where it can be imported with the command
 
 \begin{verbatim}
 butler import --export-file ./export_directory/export.yaml --transfer copy $NEW_REPO ./export_directory \
        -s instrument -s detector -s physical_filter
 \end{verbatim}
 
-The `--transfer copy` is strongly suggested, as this will copy the files into the repository datastore, removing any dependency on the `export_directory`.  The three `-s` arguments indicate that the instrument, detector, and physical_filter definitions contained the the YAML description should be skipped, as they will already exist in a repository that has been set up for the appropriate camera.
+The `--transfer copy` is strongly suggested, as this will copy the files into the repository datastore, removing any dependency on the \verb|export_directory|.  The three `-s` arguments indicate that the instrument, detector, and physical\_filter definitions contained the the YAML description should be skipped, as they will already exist in a repository that has been set up for the appropriate camera.
 
 The newly imported collections will not by default be part of the main public calibration collection.  To do so, the new collections must be added to the collection chain.  Using the following command with the `prepend` mode will add the new collections to the start of the collection chain, making them available.
 
