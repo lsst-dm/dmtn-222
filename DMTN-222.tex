@@ -81,7 +81,7 @@ Figure \ref{fig:flowchart} displays the relationship between the various stages 
 
 \subsection{Construction}
 
-Calibrations will be generated directly from raw exposures as much as possible.  The tasks and pipelines in the \verb|cp_pipe| package can produce all of the calibrations that are used for image processing, and can be supplemented as new corrections are developed.  The main documentation for calibration construction is included in \verb|cp_pipe| at \hyperlink{https://pipelines.lsst.io/v/daily/modules/lsst.cp.pipe/constructing-calibrations.html}, but the main points will be summarized here.
+Calibrations will be generated directly from raw exposures as much as possible.  The tasks and pipelines in the \verb|cp_pipe| package can produce all of the calibrations that are used for image processing, and can be supplemented as new corrections are developed.  The main documentation for calibration construction is included in \verb|cp_pipe| at \url{https://pipelines.lsst.io/v/daily/modules/lsst.cp.pipe/constructing-calibrations.html}, but the main points will be summarized here.
 
 After identifying appropriate input exposures for the calibration to be constructed, the camera-specific pipeline definition is used to produce a proposed calibration.  Following the recommendations in \citedsp{DMTN-167}, the butler collection should use the format
 \begin{verbatim}
