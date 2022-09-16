@@ -37,7 +37,7 @@ This technote defines the best practices to be used for calibration generation, 
 % See LPM-51 for version number policy.
 \setDocChangeRecord{%
   \addtohist{1}{2022-03-21}{Initial draft.}{Chris Waters}
-  \addtohist{2}{2022-09-14}{Corrected and clarified draft.}{Chris Waters}
+  \addtohist{2}{2022-09-16}{Corrected and clarified draft.}{Chris Waters}
 }
 
 
@@ -53,12 +53,10 @@ This technote defines the best practices to be used for calibration generation, 
 
 \section{Introduction}
 
-The purpose of this technote is to provide guidance on the procedures that will be used for the construction and management of calibrations.
-
-These guidelines shall be followed for any calibration that will be added to the main public butler collection.  For the purposes of this document, we will consider four cases of calibrations.
+The purpose of this technote is to provide guidance on the procedures that will be used for the construction and management of calibrations.  These guidelines shall be followed for any calibration that will be added to the main public butler collection.  For the purposes of this document, we will consider four cases of calibrations.
 
 \begin{itemize}
-\item Calibrations generated for widespread use, using the main butler collection.
+\item Calibrations generated for widespread use, using the main butler collection.  These will be called ``combined calibrations'' below, and indicate those calibrations that are used for science processing.
 \item Daily calibrations produced to monitor the stability and health of the camera.
 \item Curated calibrations that are defined by an \verb|obs_| package and must be ingested to the butler repository, as they cannot be generated from raw data.  The camera geometry calibration is an example of this type of calibration.
 \item Calibrations that have been exported from one butler repository for use in another.
@@ -68,7 +66,7 @@ Additional private calibrations produced for tests may also exist, but as those 
 
 The discussion below for updating the final combined calibrations assumes the work is being done as part of a ticketed project, and so a JIRA ticket number is available.  This number is used below to provide a unique key for the collection names.  This will allow the collections to be organized consistently, and the comments and documents attached to that ticket can be used for future reference in assessing those calibrations.  Calibration acceptance can then be thought of as simply the ``review'' process for that ticket.  Daily calibrations will use a different collection naming scheme as described below.
 
-Figure \ref{fig:flowchart} displays the relationship between the various stages of construction, validation, and use.
+Figure \ref{fig:flowchart} displays the relationship between the various stages of construction, validation, and use of combined calibrations.  Briefly, after constructing a proposed calibration, it is checked via the \verb|cp_verify| tasks to ensure that the new calibration meets all of the criteria specified in DMTN-101.  If all of those tests pass, the calibration can be certified for use, assigned a validity range, and added to the main butler calibration collection.
 
 \begin{figure}
   \includegraphics[width=\linewidth]{figures/flowchart.png}
@@ -77,11 +75,11 @@ Figure \ref{fig:flowchart} displays the relationship between the various stages 
 \end{figure}
 
 
-\section{Generating New Calibrations}
+\section{Generating New Combined Calibrations}
 
 \subsection{Construction}
 
-Calibrations will be generated directly from raw exposures as much as possible.  The tasks and pipelines in the \verb|cp_pipe| package can produce all of the calibrations that are used for image processing, and can be supplemented as new corrections are developed.  The main documentation for calibration construction is included in \verb|cp_pipe| at \url{https://pipelines.lsst.io/v/daily/modules/lsst.cp.pipe/constructing-calibrations.html}, but the main points will be summarized here.
+Combined calibrations will be generated directly from raw exposures as much as possible.  The tasks and pipelines in the \verb|cp_pipe| package can produce all of the calibrations that are used for image processing, and can be supplemented as new corrections are developed.  The main documentation for calibration construction is included in \verb|cp_pipe| at \url{https://pipelines.lsst.io/v/daily/modules/lsst.cp.pipe/constructing-calibrations.html}, but the main points will be summarized here.
 
 After identifying appropriate input exposures for the calibration to be constructed, the camera-specific pipeline definition is used to produce a proposed calibration.  Following the recommendations in \citedsp{DMTN-167}, the butler collection should use the format
 \begin{verbatim}
@@ -93,7 +91,7 @@ To ensure all butler repositories have a consistent set of calibrations, we have
 
 \subsection{Verification}
 
-Once calibrations have been generated, the calibration should be compared against a set of input exposures using the \verb|cp_verify| tasks and pipelines.  These tasks attempt to measure quality metrics from the individual calibrated exposures, and identify calibrations that fail the tests.  At a minimum, the exposures used to construct the calibration should be included, as this can identify problematic inputs that degrade the calibration quality.  An example of this is saturated flat exposures, which do not flat-field well, and should not be included in the final flat calibration.  The input butler collections specified should have the construction collection at the beginning of the list, to ensure that the verification process will find and use the calibration we wish to verify.  The output butler collection should use the format
+Once the propsed calibrations have been generated, the calibration should be compared against a set of input exposures using the \verb|cp_verify| tasks and pipelines.  These tasks attempt to measure quality metrics from the individual calibrated exposures, and identify calibrations that fail the tests.  At a minimum, the exposures used to construct the calibration should be included, as this can identify problematic inputs that degrade the calibration quality.  An example of this is saturated flat exposures, which do not flat-field well, and should not be included in the final flat calibration.  In running the \verb|cp_verify| tasks, the input butler collections specified should have the construction collection placed at the beginning of the list, to ensure that the verification process will find and use the calibration we wish to verify.  The output butler collection should use the format
 \begin{verbatim}
    <instrument>/calib/<ticket>/verify<calib type>.<date string><iteration>
 \end{verbatim}
@@ -105,13 +103,13 @@ There are a set of ipython notebooks contained in the \verb|cp_verify| examples 
 
 \subsection{Acceptance}
 
-Processing calibrations through the \verb|cp_verify| pipelines is a requirement for calibrations that will be widely used, but it does not complete the process.  A Calibration Acceptance Board (CAB) will be created that takes command of the final approval.  Ideally, all verification metrics will succeed, and a quick check of residual exposures will show no unexpected features.  In the more likely case that some metrics fail, this CAB will be tasked with deciding if the failures are fatal and the calibration should be fully rejected, or if the failures are small enough in number or impact that the calibration can be accepted for use despite them.  This should work on a consensus basis, with any commentary and discussion taking place on the JIRA ticket page for the calibration construction work.
+Processing calibrations through the \verb|cp_verify| pipelines is a requirement for calibrations that will be widely used, but it does not complete the process.  A Calibration Acceptance Board (CAB) will be created that takes command of the final approval.  Ideally, all verification metrics will succeed, and a quick check of residual exposures will show no unexpected features.  In the more likely case that some metrics fail, this CAB will be tasked with deciding if the failures are fatal and the calibration should be fully rejected, or if the failures are small enough in number or impact that the calibration can be accepted for use despite them.  This should work on a consensus basis, with any commentary and discussion taking place on the JIRA ticket page used for the calibration construction work.
 
-There is no formal CAB at this time, but it should be a priority to establish one.  The membership of this board 
+There is no formal CAB at this time, but it should be a priority to establish one.  The membership of this board will be defined via a future RFC.
 
 \subsection{Certification}
 
-Once the generated calibration has been verified and accepted, it can be certified for use for a given date range.  Calibrations generated during commissioning will likely have impossibly long valid ranges (\verb|2020-01-01T00:00:00 - 2050-01-01T00:00:00| being the current default). This ensures that any data taken can be processed without needing to worry about changing configurations or pipeline errors.   As the survey approaches, the daily calibration processing should allow the verification metrics to be monitored, providing break points where new calibrations will be generated.  With this monitoring, any changes that occur over long time scales can be anticipated and new calibrations constructed before a failure occurs in the daily calibration processing.
+Once the new combined calibration has been verified and accepted, it can be certified for use for a given date range.  Calibrations generated during commissioning will likely have impossibly long valid ranges (\verb|2020-01-01T00:00:00 - 2050-01-01T00:00:00| being the current default). This ensures that any data taken can be processed without needing to worry about changing configurations or pipeline errors.   As the survey approaches, the daily calibration processing should allow the verification metrics to be monitored, providing break points where new calibrations will be generated.  With this monitoring, any changes that occur over long time scales can be anticipated and new calibrations constructed before a failure occurs in the daily calibration processing.
 
 \section{Daily Calibrations}
 
@@ -119,10 +117,10 @@ Daily calibrations will be used to monitor the camera and telescope for changes.
 
 The second processing path simply verifies these new exposures against the existing calibration set as shown in Figure \ref{fig:daily}.  This monitors the long-term stability of the calibrations, and should be the default method used for the daily calibration processing.  Table \ref{tab:cadence} lists suggested cadences and exposure count for each calibration type.  As the instruments may be unavailable during construction and comissioning, exceptions are to be expected.  For instance, as the lamp used for LATISS flat exposures must be manually switched on from the summit, the flat verification should be skipped when no one is available to do so.
 
-As with the ticketed calibration processing, the use of standard collection names will make the results easy to find.  Following the collections above, daily calibrations should construct and verify calibrations to output collections
+As with the ticketed calibration processing, the use of standard collection names will make the results easy to find.  Following the collections above, daily calibrations should construct and verify calibrations to organized output collections.  These collections will replace the JIRA ticket number used for combined calibrations with either ``dailyInternal,'' for checks that generate a calibration from the exposures and use that for validation, or ``dailyExternal,'' for checks that validate the exposures against the existing set of combined calibrations.  The date string will then be used to ensure unique collection names.
 \begin{verbatim}
-   <instrument>/calib/daily/<calib type}Gen.<date string><iteration>
-   <instrument>/calib/daily/verify<calib type}.<date string><iteration>
+   <instrument>/calib/dailyInternal/<calib type}Gen.<date string><iteration>
+   <instrument>/calib/dailyInternal/verify<calib type}.<date string><iteration>
 \end{verbatim}
 
 Any comments on the construction and verification should be added to the observing log for that date, with any anomalies or concerns raised to the Calibration Acceptance Board for further evaluation.
@@ -154,7 +152,7 @@ Any comments on the construction and verification should be added to the observi
 
 \section{Curated Calibrations}
 
-Curated calibrations are those calibrations that cannot easily be generated from a series of exposures, or that require special hardware that will not be available at the summit.  Currently, the camera geometry calibration is the only curated calibration.   These calibrations will be ingested via the \verb|butler write-curated-calibrations| command.  This command by default will attempt to write to the main \verb|CAMERA/calib| collection.  This is generally not desired, as it is useful for that collection name to point to a CHAINED butler collection, to allow for easier calibration management.  Instead, a ticketed collection name should be used, as the following example illustrates for the LATISS camera.
+Curated calibrations are those calibrations that cannot easily be generated from a series of exposures, or that require special hardware that will not be available at the summit.  Currently, the camera geometry calibration is the only curated calibration in wide use.   These calibrations will be ingested via the \verb|butler write-curated-calibrations| command.  This command by default will attempt to write to the main \verb|CAMERA/calib| collection.  This is generally not desired, as it is useful for that collection name to point to a CHAINED butler collection, to allow for easier calibration management.  Instead, a ticketed collection name should be used, as the following example illustrates for the LATISS camera.
 
 \begin{verbatim}
 butler write-curated-calibrations $REPO lsst.obs.lsst.Latiss \
@@ -192,7 +190,7 @@ butler collection-chain $NEW_REPO --mode=prepend LATISS/calib \
 
 This process could be automated in part, particularly by ensuring a default export location at the main data facility.  If new calibrations are always exported to this location as they are certified, then any remote site need only rsync this location and import them.
 
-Any change to the main public calibration collection will be documented in JIRA and in the summit night log, and announced widely within the project.
+Any change to the main public calibration collection will be documented in JIRA and in the summit night log, and announced via the community forum to ensure that all users are aware of the changes in the combined calibrations.
 
 \section{Conclusions}
 
