@@ -32,7 +32,7 @@ Chris Waters
 % \setDocCurator{The Curator of this Document}
 
 \setDocAbstract{%
-This technote defines the best practices to be used for calibration generation, the verification that that calibration meets requirements, and when deciding if the calibration should be accepted for use in processing at both the summit and USDF.
+This technote defines the best practices to be used for calibration generation, the verification that that calibration meets requirements, and when deciding if the calibration should be accepted for use in processing at both the summit and USDF.  Other aspects of calibration product management, including the contents of the appropriate ``defaults'' collection, are also discussed.
 }
 
 % Change history defined here.
@@ -43,7 +43,7 @@ This technote defines the best practices to be used for calibration generation, 
   \addtohist{1}{2022-03-21}{Initial draft.}{Chris Waters}
   \addtohist{2}{2022-09-16}{Corrected and clarified draft.}{Chris Waters}
   \addtohist{3}{2024-04-17}{Updated draft reflecting processes actually in use.}{Chris Waters}
-  \addtohist{4}{2024-11-08}{Updated draft with further details on processes}{Chris Waters}
+  \addtohist{4}{2024-12-16}{Updated draft with further details on processes}{Chris Waters}
 }
 
 
@@ -149,7 +149,7 @@ The US Data Facility (USDF) is now operational, all calibrations used for the su
 The process for transferring the calibrations to other butler sites is discussed below in Section \ref{sec:calib_export}.
 
 \subsection{Verification}
-A verification report is then generated from the generation and verification collections, and will be supplied to the Telescope And auXiliary Instrumentation Calibration Acceptance Board (TAXICAB).
+A verification report is then generated from the generation and verification collections, and will be supplied to the Telescope And auXiliary Instrumentation Calibration Acceptance Board (TAXICAB), as defined in \url{https://rtn-075.lsst.io/}.
 
 Once the proposed calibrations have been generated, the calibration should be used for processing using the \verb|cp_verify| tasks and pipelines.
 These tasks measure quality metrics from those processed exposures, and identify any test failures.
@@ -158,6 +158,8 @@ An example of this is saturated flat exposures, which do not flat-field well, an
 In running the \verb|cp_verify| tasks, the input butler collections specified should have the construction RUN collection placed at the beginning of the list, to ensure that the verification process will find and use the calibration we wish to verify.
 
 Exposures from outside the set used for construction should be added to provide insight into the expected validity range for the calibration.
+For calibrations generated to correct for known camera changes (such as a sequencer upgrade), we will likely need to generate the combined calibration from a limited set of inputs, and will therefore rely on \verb|cp_verify| metrics to monitor those calibrations.
+In cases where we have multiple days of observations that can be used, including exposures from multiple dates in the verification set can be used to 
 As long as the metrics on those exposures remain within the limits defined in DMTN-101, the calibration may continue to be valid for the date range including those additional exposures.
 This can be used to establish the valid date ranges to be used when certifying the calibration.
 
@@ -213,7 +215,7 @@ This means that if the underlying generation collection is removed, the calibrat
 With the calibrations built, verified, and certified, a TAXICAB ``hailing'' ticket should be created, with a verification report attached for consideration.
 Any member of the Rubin Observatory Team is welcome to join the TAXICAB meeting, and the meeting will make decisions as a consensus.
 Any additional processing that is suggested by the TAXICAB should be defined and run prior to the TAXICAB meeting, which will have a planned weekly timeslot.
-Currently, this meeting is scheduled for Tuesday at 2pm Project Time.
+Currently, this meeting is scheduled for Tuesday at 2:30pm Project Time.
 If no open TAXICAB hailing tickets exist, this meeting will be skipped.
 Scheduling a TAXICAB meeting generally indicates that the associated ticket has been marked as ``Flagged,'' as it is awaiting the decision on acceptance.
 
@@ -233,6 +235,12 @@ If code was added as part of the construction, that work should be reviewed on t
 Otherwise, the TAXICAB approval (by marking that ticket ``Adopted'') should also mark the construction ticket as reviewed.
 The deployment ticket will be self-reviewing in the future: a trivial processing task should be run at each repository that has had the new calibrations deployed, with checks that those new calibrations are correctly selected and used.
 
+A summary of the TAXICAB tickets is currently compiled on the project Confluence \url{https://rubinobs.atlassian.net/wiki/spaces/DM/pages/281673762}.
+This page should be updated as new TAXICAB tickets are generated, to ensure that we have a central location to track the various tickets.
+As some repositories may have the distribution step skipped for various reasons, such as not having data for the camera the calibrations were created for, this page also lists which repositories the calibrations on that ticket were copied to.
+A central archive of the exported calibrations needs to be established, so that the calibration CHAINED collection can be reconstructed at all data facilities.
+
+
 \subsection{Distribution}
 \label{sec:calib_export}
 Upon approval of the TAXICAB, the calibrations can be distributed for use.
@@ -242,12 +250,15 @@ In most circumstances in which new forward-looking calibrations are deployed, th
 
 The calibrations must then be exported for use in other repositories, with the butler repository at the summit being most important to update.  An example command to do such is
 \begin{verbatim}
-butler export-calibs $REPO ./export_directory LATISS/calib/DM-XYZ LATISS/calib/DM-XYZ/voltageChange/bias [...]
+butler export-calibs $REPO \
+       ./export_directory \
+       LATISS/calib/DM-XYZ \
+       LATISS/calib/DM-XYZ/voltageChange/bias [...]
 \end{verbatim}
 This command exports the files into the \verb|export_directory| location, and constructs a YAML description of the calibrations and their collections.
 Exporting the ticket-level CHAINED collection will export all of the children CALIBRATION collections, making it the preferred way to export calibrations.
 It is strongly recommended that the file permissions are checked in the \verb|export_directory| to ensure that the files are world readable.
-The import process will create files with the same permissions, so this check is essential to prevent processing problems.
+The import process will create files with the same permissions on some repositories, so this check is essential to prevent processing problems.
 
 This \verb|export_directory| must then be transferred to the location of the new repository, where it can be imported with the command
 \begin{verbatim}
@@ -259,7 +270,7 @@ butler import $NEW_REPO  --transfer copy \
 The \verb|--transfer copy| is strongly suggested, as this will copy the files into the repository datastore, removing any dependency on the \verb|export_directory|.
 The three \verb|-s| arguments indicate that the \verb|instrument|, \verb|detector|, and \verb|physical_filter| definitions contained the the YAML description should be skipped, as they will already exist in a repository that has been set up for the appropriate camera.
 
-The newly imported collections will not by default be part of the main public calibration collection.
+The newly imported collections will not by default be part of the public calibration collection.
 To do so, the new collections must be added to the collection chain.
 Using the following command with the `prepend` mode will add the new collections to the start of the collection chain, making them available.
 \begin{verbatim}
@@ -270,6 +281,7 @@ butler collection-chain $NEW_REPO --mode=prepend LATISS/calib \
 The distribution ticket should be able to be self-reviewed, after confirming that at least one exposure from the validity range of the new calibrations can be processed through \verb|IsrTask|, and that the output processed exposure has the correct calibration information recorded in its header.
 
 The following table lists the current set of facilities, repositories, and which cameras are deployed in that repository.
+
 \begin{tabular}{lll}
   Data Facility & Repository & Camera \\
   \hline
