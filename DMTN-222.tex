@@ -408,7 +408,53 @@ butler write-curated-calibrations $REPO lsst.obs.lsst.Latiss \
 
 This will ensure that the calibrations can be chained into the main collection as detailed above.
 
+\section{Batch Process Submission (BPS) Templates}
+
+We have put together a set of convenient bps\footnote{https://pipelines.lsst.io/modules/lsst.ctrl.bps/quickstart.html} template files that have been tested at USDF but should also be suitable testing at other locations.
+These templates are intended for batch processing of calibration construction and verification for both user collection testing and final calibration production.
+This section has a brief overview, but please see the README files at \texttt{https://github.com/lsst/cp\_pipe/tree/main/bps/templates/README.md} and \texttt{https://github.com/lsst/cp\_verify/tree/main/bps/templates/README.md} for up-to-date information.
+Note that the templates assume that each calibration is certified into the overall calibration chain called \texttt{\$\{USER\_CALIB\_PREFIX\}\$\{INSTRUMENT\}\/calib\/\$\{TICKET\}\/\$\{TAG\}} between steps.
+A walkthrough example is in Section~\ref{sec:example}.
+
+Use of the templates are controlled by a number of environment variables.
+At the writing of this documentation these include:
+
+\begin{itemize}
+\item{\texttt{export USER\_CALIB\_PREFIX=""} or \texttt{export USER\_CALIB\_PREFIX=\"u\/erykoff\"}: Set to an empty string for official calibrations, or the user collection prefix with trailing slash.}
+\item{\texttt{export INSTRUMENT=LSSTComCam}: The name of the instrument.}
+\item{\texttt{export TICKET=DM-46562}: The name of the ticket associated with the calib construction.}
+\item{\texttt{export REPO=\/repo\/main}: The name of the butler repository to generate calibs.}
+\item{\texttt{export RAW\_COLLECTION=LSSTComCam\/raw\/all}: The name of the raw data collection.}
+\item{\texttt{export CALIB\_COLLECTIONS=LSSTComCam\/calib\/DM-46825}: Comma-separated list of curated or previously generated calibration collections to use as a starting point.}
+\item{\texttt{export TAG=newCalibs}: A human-readable tag to help indicate why a set of calibs were built (matched to the ticket number).}
+\item{\texttt{export RERUN=20250122a}: The rerun name to indicate when the calibrations were generated.}
+\item{\texttt{export BOOTSTRAP\_RUN\_NUMBER=1}: The bootstrap run number ensures that bootstrap run collection names are unique in case of an initial mistake.}
+\item{\texttt{export SELECTION\_BIAS=\"instrument='LSSTComCam' and selection\_string\"}: The selection of raws to make the bootstrapBias and bias frames.}
+\item{\texttt{export SELECTION\_DARK=\"instrument='LSSTComCam' and selection\_string\"}: The selection of raws to make the bootstrapDark and dark frames.}
+\item{\texttt{export SELECTION\_FLAT\_BOOTSTRAP=\"instrument='LSSTComCam' and selection\_string\"}: The selection of raws to make the bootstrapFlat.}
+\item{\texttt{export SELECTION\_PTC=\"instrument='LSSTComCam' and selection\_string\"}: The selection of raws to generate the PTC.}
+\item{\texttt{export SELECTION\_PTC\_LINEARIZER=\$SELECTION\_PTC}: The selection of raws to generate the linearizer; usually will be the same as the PTC selection.}
+\item{\texttt{export SELECTION\_PTC\_BFK=\$SELECTION\_PTC}: The selection of raws to generate the brighter-fatter kernel; usually will be the same as the PTC selection.}
+\item{\texttt{export SELECTION\_PTC\_CTI=\$SELECTION\_PTC}: The selection of raws to generate the charge-transfer-inefficiency dataset; usually will be the same as the PTC selection.}
+\item{\texttt{export SELECTION\_FLAT\_g=\"instrument='LSSTComCam and selection\_string\"}: The selection of raws to generate the g-band flat. There will need to be one selection for each ugrizy.}
+\end{itemize}
+
+Additionally, for the verify templates we have:
+
+\begin{itemize}
+\item{\texttt{export VERIFY\_RERUN=20250122a}: The rerun name to indicate when the verification was run.}
+\item{\texttt{export SELECTION\_BIAS\_V=\"instrument='LSSTComCam' and selection\_string\"}: The selection of raws to verify the bias frames.}
+\item{\texttt{export SELECTION\_DARK\_V=\"instrument='LSSTComCam' and selection\_string\"}: The selection of raws to verify the dark frames.}
+\item{\texttt{export SELECTION\_PTC\_V=\"instrument='LSSTComCam' and selection\_string\"}: The selection of raws to verify the PTC.}
+\item{\texttt{export SELECTION\_PTC\_LINEARIZER\_V=\$SELECTION\_PTC\_V}: The selection of raws to verify the linearizer; usually will be the same as the PTC selection.}
+\item{\texttt{export SELECTION\_PTC\_BFK\_V=\$SELECTION\_PTC\_V}: The selection of raws to verify the brighter-fatter kernel; usually will be the same as the PTC selection.}
+\item{\texttt{export SELECTION\_FLAT\_g\_V=\"instrument='LSSTComCam and selection\_string\"}: The selection of raws to verify the g-band flat. There will need to be one selection for each ugrizy.}
+\end{itemize}
+
 \section{Full Calibration Example}
+\label{sec:example}
+
+TODO: DM-48520
 
 \section{Conclusions}
 
