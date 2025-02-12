@@ -468,7 +468,11 @@ export INSTRUMENT=LSSTComCam
 export TICKET=DM-48520
 export REPO=/repo/main
 export RAW_COLLECTION=LSSTComCam/raw/all
-export CALIB_COLLECTIONS=LSSTComCam/calib/DM-48650,LSSTComCam/calib/DM-47447/gainFixup/ptc.20241107a,LSSTComCam/calib/DM-46360/isrTaskLSST/linearizer.20240926a,LSSTComCam/calib/DM-46360/isrTaskLSST/bfk.20240926a,LSSTComCam/calib/DM-46360/isrTaskLSST/ptc.20240926a
+export CALIB_COLLECTIONS="LSSTComCam/calib/DM-48650,\
+    LSSTComCam/calib/DM-47447/gainFixup/ptc.20241107a,\
+    LSSTComCam/calib/DM-46360/isrTaskLSST/linearizer.20240926a,\
+    LSSTComCam/calib/DM-46360/isrTaskLSST/bfk.20240926a,\
+    LSSTComCam/calib/DM-46360/isrTaskLSST/ptc.20240926a"
 export TAG=DP1
 export RERUN=20250207a
 export BOOTSTRAP_RUN_NUMBER=1
@@ -477,36 +481,66 @@ export BOOTSTRAP_RUN_NUMBER=1
 export START_DATE=1970-01-01T00:00:00
 export CERT_RERUN=20250207a
 
-export SELECTION_BIAS="instrument='LSSTComCam' and ((exposure.day_obs=20241208 and exposure.seq_num >= 696) or (exposure.day_obs=20241206 and exposure.seq_num >=427)) and exposure.observation_type='bias'"
-export SELECTION_DARK="instrument='LSSTComCam' and ((exposure.day_obs=20241208 and exposure.seq_num >= 696) or (exposure.day_obs=20241206 and exposure.seq_num >=427)) and exposure.observation_type='dark'"
-export SELECTION_FLAT_BOOTSTRAP="instrument='LSSTComCam' and exposure.day_obs=20240806 and exposure.science_program='BLOCK-T68' and exposure.observation_reason='flat' and physical_filter='r_03'"
+export SELECTION_BIAS="instrument='$INSTRUMENT' and \
+    ((exposure.day_obs=20241208 and exposure.seq_num >= 696) or \
+    (exposure.day_obs=20241206 and exposure.seq_num >=427)) and \
+    exposure.observation_type='bias'"
+export SELECTION_DARK="instrument='$INSTRUMENT' and \
+    ((exposure.day_obs=20241208 and exposure.seq_num >= 696) or \
+    (exposure.day_obs=20241206 and exposure.seq_num >=427)) and \
+    exposure.observation_type='dark'"
+export SELECTION_FLAT_BOOTSTRAP="instrument='$INSTRUMENT' and \
+    exposure.day_obs=20240806 and exposure.science_program='BLOCK-T68' and \
+    exposure.observation_reason='flat' and physical_filter='r_03'"
 
-export SELECTION_PTC_CTI="exposure.day_obs=20240806 and instrument='LSSTComCam' and exposure.science_program='BLOCK-T68' and exposure.observation_reason='comcam_ptc' and physical_filter='r_03'"
+export SELECTION_PTC_CTI="instrument='$INSTRUMENT' and \
+    exposure.day_obs=20240806 and \
+    and exposure.science_program='BLOCK-T68' and \
+    exposure.observation_reason='comcam_ptc' and \
+    physical_filter='r_03'"
 
-export SELECTION_FLAT_u="instrument='$INSTRUMENT' and exposure.day_obs=20241110 and exposure.seq_num in (44..63)"
-export SELECTION_FLAT_g="instrument='$INSTRUMENT' and exposure.day_obs=20241126 and exposure.seq_num in (21..40)"
-export SELECTION_FLAT_r="instrument='$INSTRUMENT' and exposure.day_obs=20241111 and exposure.seq_num in (17..36) and band='r'"
-export SELECTION_FLAT_i="instrument='$INSTRUMENT' and exposure.day_obs=20241120 and exposure.seq_num in (41..64) and exposure.seq_num != 58"
-export SELECTION_FLAT_z="instrument='$INSTRUMENT' and exposure.day_obs=20241112 and exposure.seq_num in (28..48)"
-export SELECTION_FLAT_y="instrument='$INSTRUMENT' and exposure.day_obs=20241119 and exposure.seq_num in (21..36)"
+export SELECTION_FLAT_u="instrument='$INSTRUMENT' and \
+    exposure.day_obs=20241110 and exposure.seq_num in (44..63)"
+export SELECTION_FLAT_g="instrument='$INSTRUMENT' and \
+    exposure.day_obs=20241126 and exposure.seq_num in (21..40)"
+export SELECTION_FLAT_r="instrument='$INSTRUMENT' and \
+    exposure.day_obs=20241111 and exposure.seq_num in (17..36)"
+export SELECTION_FLAT_i="instrument='$INSTRUMENT' and \
+    exposure.day_obs=20241120 and exposure.seq_num in (41..64) and exposure.seq_num != 58"
+export SELECTION_FLAT_z="instrument='$INSTRUMENT' and \
+    exposure.day_obs=20241112 and exposure.seq_num in (28..48)"
+export SELECTION_FLAT_y="instrument='$INSTRUMENT' and \
+    exposure.day_obs=20241119 and exposure.seq_num in (21..36)"
 
 cd /sdf/data/rubin/user/erykoff/calibrations/LSSTComCam/DM-48520
 mkdir -p images
 
+# This is a quick check that the filled-in template looks
+# correct (watch for missing env vars!)
 cat $CP_PIPE_DIR/bps/templates/bps_biasBootstrap.yaml | envsubst
 
 bps submit $CP_PIPE_DIR/bps/templates/bps_biasBootstrap.yaml
 
 # Download a couple of images to check them.
-butler retrieve-artifacts $REPO images -d biasBootstrap --collections ${USER_CALIB_PREFIX}$INSTRUMENT/calib/$TICKET/$TAG/biasBootstrapGen.$RERUN/run${BOOTSTRAP_RUN_NUMBER} --where "instrument='${INSTRUMENT}' and detector in (5, 8)" --no-preserve-path
+butler retrieve-artifacts $REPO images \
+    -d biasBootstrap \
+    --collections ${USER_CALIB_PREFIX}$INSTRUMENT/calib/$TICKET/$TAG/biasBootstrapGen.$RERUN/run${BOOTSTRAP_RUN_NUMBER} \
+    --where "instrument='${INSTRUMENT}' and detector in (5, 8)" --no-preserve-path
 
 bps submit $CP_PIPE_DIR/bps/templates/bps_darkBootstrap.yaml
 
-butler retrieve-artifacts $REPO images -d darkBootstrap --collections ${USER_CALIB_PREFIX}$INSTRUMENT/calib/$TICKET/$TAG/darkBootstrapGen.$RERUN/run${BOOTSTRAP_RUN_NUMBER} --where "instrument='${INSTRUMENT}' and detector in (5, 8)" --no-preserve-path
+butler retrieve-artifacts $REPO images \
+    -d darkBootstrap \
+    --collections ${USER_CALIB_PREFIX}$INSTRUMENT/calib/$TICKET/$TAG/darkBootstrapGen.$RERUN/run${BOOTSTRAP_RUN_NUMBER} \
+    --where "instrument='${INSTRUMENT}' and detector in (5, 8)" --no-preserve-path
 
 bps submit $CP_PIPE_DIR/bps/templates/bps_flatBootstrap.yaml
 
 bps submit $CP_PIPE_DIR/bps/templates/bps_defects.yaml
+
+# We are certifying (applying a date range) and chaining the calibrations
+# as we go, which makes downstream processing easier without having to
+# track many collections.
 
 butler certify-calibrations $REPO \
     --begin-date $START_DATE \
@@ -544,7 +578,10 @@ cat $CP_PIPE_DIR/bps/templates/bps_bias.yaml | envsubst
 
 bps submit $CP_PIPE_DIR/bps/templates/bps_bias.yaml
 
-butler retrieve-artifacts $REPO images -d biasMosaic8 --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/biasGen.${RERUN} --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
+butler retrieve-artifacts $REPO images \
+    -d biasMosaic8 \
+    --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/biasGen.${RERUN} \
+    --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
 
 butler certify-calibrations $REPO \
     --begin-date $START_DATE \
@@ -561,7 +598,10 @@ cat $CP_PIPE_DIR/bps/templates/bps_dark.yaml | envsubst
 
 bps submit $CP_PIPE_DIR/bps/templates/bps_dark.yaml
 
-butler retrieve-artifacts $REPO images -d darkMosaic8 --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/darkGen.${RERUN} --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
+butler retrieve-artifacts $REPO images \
+    -d darkMosaic8 \
+    --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/darkGen.${RERUN} \
+    --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
 
 butler certify-calibrations $REPO \
     --begin-date $START_DATE \
@@ -588,17 +628,35 @@ bps submit $CP_PIPE_DIR/bps/templates/bps_flat_z.yaml
 
 bps submit $CP_PIPE_DIR/bps/templates/bps_flat_y.yaml
 
-butler retrieve-artifacts $REPO images -d flat --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/flatGen-u.${RERUN} --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
+butler retrieve-artifacts $REPO images \
+    -d flat \
+    --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/flatGen-u.${RERUN} \
+     --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
 
-butler retrieve-artifacts $REPO images -d flat --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/flatGen-g.${RERUN} --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
+butler retrieve-artifacts $REPO images \
+    -d flat \
+    --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/flatGen-g.${RERUN} \
+     --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
 
-butler retrieve-artifacts $REPO images -d flat --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/flatGen-r.${RERUN} --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
+butler retrieve-artifacts $REPO images \
+    -d flat \
+    --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/flatGen-r.${RERUN} \
+     --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
 
-butler retrieve-artifacts $REPO images -d flat --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/flatGen-i.${RERUN} --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
+butler retrieve-artifacts $REPO images \
+    -d flat \
+    --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/flatGen-i.${RERUN} \
+     --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
 
-butler retrieve-artifacts $REPO images -d flat --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/flatGen-z.${RERUN} --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
+butler retrieve-artifacts $REPO images \
+    -d flat \
+    --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/flatGen-z.${RERUN} \
+    --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
 
-butler retrieve-artifacts $REPO images -d flat --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/flatGen-y.${RERUN} --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
+butler retrieve-artifacts $REPO images \
+    -d flat \
+    --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/flatGen-y.${RERUN} \
+     --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
 
 butler certify-calibrations $REPO \
     --begin-date $START_DATE \
@@ -671,10 +729,24 @@ butler collection-chain $REPO \
 ########################################################
 
 export VERIFY_RERUN=20240210a
-export SELECTION_SCIENCE_V="instrument='LSSTComCam' and exposure in (2024120100160,2024120700307,2024120700297,2024120300156,2024120700339,2024112000223)"
+export SELECTION_SCIENCE_V="instrument='$INSTRUMENT' and \
+    exposure in (2024120100160,2024120700307,2024120700297,2024120300156,\
+    2024120700339,2024112000223)"
 # Other exports
-export SELECTION_BIAS_V="instrument='LSSTComCam' and exposure in (2024102100509,2024102600031,2024102900175,2024110100164,2024110800008,2024111200387,2024111600316,2024112200390,2024112300315,2024112400006,2024112700443,2024120500004,2024120500266,2024120500272,2024120500291,2024120700571,2024120700576,2024120700592,2024120700598,2024120800704,2024120800724,2024120900006,2024120900284,2024121000596,2024121100007)"
-export SELECTION_DARK_V="instrument='LSSTComCam' and exposure in (2024102300019,2024102300035,2024102500019,2024102500044,2024103000012,2024103000037,2024110100149,2024110100175,2024110500279,2024110500301,2024111100307,2024111100334,2024111600322,2024111600350,2024112000330,2024112000355,2024112700437,2024112700455,2024120100481,2024120100507,2024120700582,2024120700588,2024120700604,2024120700610,2024121000007,2024121000590,2024121000612)"
+export SELECTION_BIAS_V="instrument='$INSTRUMENT' and \
+    exposure in (2024102100509,2024102600031,2024102900175,2024110100164,\
+    2024110800008,2024111200387,2024111600316,2024112200390,2024112300315,\
+    2024112400006,2024112700443,2024120500004,2024120500266,2024120500272,\
+    2024120500291,2024120700571,2024120700576,2024120700592,2024120700598,\
+    2024120800704,2024120800724,2024120900006,2024120900284,2024121000596,\
+    2024121100007)"
+export SELECTION_DARK_V="instrument='$INSTRUMENT' and \
+    exposure in (2024102300019,2024102300035,2024102500019,2024102500044,\
+    2024103000012,2024103000037,2024110100149,2024110100175,2024110500279,\
+    2024110500301,2024111100307,2024111100334,2024111600322,2024111600350,\
+    2024112000330,2024112000355,2024112700437,2024112700455,2024120100481,\
+    2024120100507,2024120700582,2024120700588,2024120700604,2024120700610,\
+    2024121000007,2024121000590,2024121000612)"
 export SELECTION_FLAT_u_V=$SELECTION_FLAT_u
 export SELECTION_FLAT_g_V=$SELECTION_FLAT_g
 export SELECTION_FLAT_r_V=$SELECTION_FLAT_r
@@ -688,7 +760,10 @@ cat $CP_VERIFY_DIR/bps/templates/bps_verify_science.yaml | envsubst
 
 bps submit $CP_VERIFY_DIR/bps/templates/bps_verify_science.yaml
 
-butler retrieve-artifacts $REPO images -d verifyScience8 --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/verifyScience.${VERIFY_RERUN} --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
+butler retrieve-artifacts $REPO images \
+    -d verifyScience8 \
+    --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/verifyScience.${VERIFY_RERUN} \
+    --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
 
 # Other verifications.
 
