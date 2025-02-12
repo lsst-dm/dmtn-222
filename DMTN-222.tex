@@ -632,22 +632,22 @@ bps submit $CP_PIPE_DIR/bps/templates/bps_flat_y.yaml
 butler retrieve-artifacts $REPO images \
     -d flat \
     --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/flatGen-u.${RERUN} \
-     --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
+    --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
 
 butler retrieve-artifacts $REPO images \
     -d flat \
     --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/flatGen-g.${RERUN} \
-     --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
+    --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
 
 butler retrieve-artifacts $REPO images \
     -d flat \
     --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/flatGen-r.${RERUN} \
-     --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
+    --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
 
 butler retrieve-artifacts $REPO images \
     -d flat \
     --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/flatGen-i.${RERUN} \
-     --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
+    --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
 
 butler retrieve-artifacts $REPO images \
     -d flat \
@@ -657,7 +657,7 @@ butler retrieve-artifacts $REPO images \
 butler retrieve-artifacts $REPO images \
     -d flat \
     --collections ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/flatGen-y.${RERUN} \
-     --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
+    --where "instrument='${INSTRUMENT}'" --no-preserve-path --find-first
 
 butler certify-calibrations $REPO \
     --begin-date $START_DATE \
