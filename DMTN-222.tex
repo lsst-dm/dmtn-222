@@ -20,7 +20,7 @@
 % \setDocSubtitle{A subtitle}
 
 \author{%
-Chris Waters
+Chris Waters, Eli Rykoff
 }
 
 \setDocRef{DMTN-222}
@@ -44,6 +44,8 @@ This technote defines the best practices to be used for calibration generation, 
   \addtohist{2}{2022-09-16}{Corrected and clarified draft.}{Chris Waters}
   \addtohist{3}{2024-04-17}{Updated draft reflecting processes actually in use.}{Chris Waters}
   \addtohist{4}{2024-12-16}{Updated draft with further details on processes}{Chris Waters}
+  \addtohist{5}{2025-02-12}{Updated draft with bps templates and worked example}{Eli Rykoff}
+  \addtohist{6}{2025-04-29}{Updated draft with rucio usage for calibration distribution}{Eli Rykoff}
 }
 
 
@@ -245,10 +247,19 @@ A central archive of the exported calibrations needs to be established, so that 
 \label{sec:calib_export}
 Upon approval of the TAXICAB, the calibrations can be distributed for use.
 A separate distribution ticket should be created to handle this work, and linked to both the construction ticket and the TAXICAB ticket.
-As the calibrations have already been certified in the origin butler repository, the distribution process for that repository simply needs a CHAINED collection added that contains all of the calibrations generated on the construction ticket.
-In most circumstances in which new forward-looking calibrations are deployed, this new CHAINED collection can be prepended to the top level calibration CHAINED collection, installing the calibration for use.
 
-The calibrations must then be exported for use in other repositories, with the butler repository at the summit being most important to update.  An example command to do such is
+There are three different distributions that need to be handled.
+First, calibrations in \texttt{\/repo\/main} need to be chained into the default calibration collection.
+Second, calibrations generated in \texttt{\/repo\/main} need to be copied over to the \texttt{embargo} repo at USDF if they need to be applied to embargoed images.
+Third, calibrations need to be copied to the Summit, Base Test Stand, and other Data Facilities via \texttt{rucio}.
+In the latter two cases, after calibrations have been copied they need to be chained into the default calibration collection.
+
+In most cases, when new forward-looking calibrations are deployed as the default, the new CHAINED collection which was created as part of the calibration generation can be prepended to the top level calibration CHAINED collection, installing the calibrations for use by default.
+
+\subsubsection{Exporting and Importing Calibrations}
+
+The calibrations must then be exported for use in other repositories and to create a local archive of calibrations at USDF.
+An example command to do such is
 \begin{verbatim}
 butler export-calibs $REPO \
        ./export_directory \
@@ -257,8 +268,6 @@ butler export-calibs $REPO \
 \end{verbatim}
 This command exports the files into the \verb|export_directory| location, and constructs a YAML description of the calibrations and their collections.
 Exporting the ticket-level CHAINED collection will export all of the children CALIBRATION collections, making it the preferred way to export calibrations.
-It is strongly recommended that the file permissions are checked in the \verb|export_directory| to ensure that the files are world readable.
-The import process will create files with the same permissions on some repositories, so this check is essential to prevent processing problems.
 
 This \verb|export_directory| must then be transferred to the location of the new repository, where it can be imported with the command
 \begin{verbatim}
@@ -313,23 +322,82 @@ The following table lists the current set of facilities, repositories, and which
   \hline
 \end{tabular}
 
-\subsubsection{Summit Cleanup}
+\subsubsection{Distribution With Rucio}
 
-Files in the butler repos at the summit and TTS are subject to an automated cleaning process.
-We can avoid having calibrations cleaned by ensuring that they are added to TAGGED collections.
-These collections mark the datasets as important, preventing the automated cleaning from removing them.
-After ingesting and chaining the newly imported calibrations, a series of \verb|butler associate| commands should be run to create the TAGGED collections.
-These TAGGED collections do not have validity date ranges associated with them, and so care must be taken that two datasets with the same dataId are not associated into the same TAGGED collection.
-An example association command is
+The way to copy calibration files from \texttt{\/repo\/main} to the Summit, BTS, and the other DFs is via \texttt{rucio}.
+Note that \texttt{rucio} does not have access to the \texttt{embargo} repo.
+
+Using \texttt{rucio} involves first registering the datasets with the \texttt{rucio} service, and then creating a ``rule'' which says where the files should be synchronized.
+Once the rule is created then the \texttt{rucio} service will do the necessary synchronizations, and will place the calibrations in special S3 calibration buckets at BTS, the Summit, and at any other DFs that are configured.
+The S3 calibration buckets are configured such that only \texttt{rucio} has write access, and these files cannot be directly deleted (on purpose or accident).
+We have not yet figured out the plans for removing old calibrations.
+
+At the current time \texttt{rucio} will only synchronize the files, and it is the responsibility of the person doing the deployment to copy over the above \texttt{export.yaml} and do the ingestion and the final collection chaining.
+In the near future we expect the ingestion will be done automatically, though explicit deployment chaining is going to be a manual task for the foreseeable future.
+
+The following is how a set of flats can be synchronized.
+Note that the \texttt{DSLABEL} can be anything.
+But using the ticket name is very important to ensure that the dataset name is unique for each set of registered calibrations.
+
 \begin{verbatim}
-butler associate $REPO \
-       LSSTComCam/calib_tagged/DM-46360 \
-       -d bias \
-       --collections LSSTComCam/calib/DM-46360/isrTaskLSST/biasGen.20240926a/20240927T212215Z
+
+# Define a descriptive label
+DSLABEL=flat
+
+# This is the collection where calibs will be copied from
+COLLECTION=$INSTRUMENT/calib/$TICKET
+# This dataset name must be unique
+DATASET=Dataset/$INSTRUMENT/$DSLABEL/$TICKET
+
+# Loop over all the types of calibration products in the
+# collection. In the future rucio-register may be able
+# take an array of dataset types.
+# Be careful with this step, as you need to know all the
+# types of calibs in the collection.
+for dstype in flat; do
+  rucio-register data-products \
+      -s 10 \
+      -C /sdf/data/rubin/shared/calibration_archive/rucio/main-calib-config.yaml \
+      -r /repo/main \
+      -t $dstype \
+      -c $COLLECTION \
+      -d $DATASET
+done
+
+# Close the dataset so that no further files can be
+# associated with it.
+rucio did update --close --did ancillary:$DATASET
+
+# List the contents of the dataset to confirm that everything
+# looks as expected.
+rucio did content list --did ancillary:$DATASET
+
+# Define a rule to synchronize the files at 3 sites (note that
+# the number of copies must match the number of rucio sites).
+RULEID=$(rucio rule add \
+    --rses 'SLAC_BUTLER_DISK|BASE_CALIB_DISK|SUMMIT_CALIB_DISK' \
+    --did ancillary:$DATASET \
+    --copies 3)
+# Show detailed information on the synchronization of the files.
+rucio rule show --rule $RULEID
+
+# Show a concise table of the synchronization state of all the
+# files and locations. This command should be run every once in
+# a while until all the files have completed synchronization.
+rucio replica list dataset --did ancillary:$DATASET
+
 \end{verbatim}
-which must manually iterate over all calibration dataset\_type/generation collection pairs.
-This TAGGED collection should never be used for processing, and is simply an accounting step to prevent cleanup.
-Keeping these collections prefixed with \verb|$INSTRUMENT/calib_tagged/$TICKET| makes it clear that they're not intended for processing, but allows calibrations generated at the same time to be grouped together.
+
+Once the replica list shows that everything is synchronized among the sites, the \texttt{export.yaml} can be copied to the BTS and Summit and imported as such.
+It is very important to get the file prefix correct, as well as to use the \texttt{direct} import method which tells the database that the files are already safely in the calibrations bucket.
+
+\begin{verbatim}
+
+butler import $REPO s3://butler@rubinobs-calibrations/rucio/ancillary --export-file `pwd`/export.yaml -t direct
+
+\end{verbatim}
+
+After this the calib collection chain can be updated as with main and embargo.
 
 \subsection{Auxilliary Data Products}
 
