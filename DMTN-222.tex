@@ -20,7 +20,7 @@
 % \setDocSubtitle{A subtitle}
 
 \author{%
-Chris Waters
+Chris Waters, Eli Rykoff
 }
 
 \setDocRef{DMTN-222}
@@ -44,6 +44,8 @@ This technote defines the best practices to be used for calibration generation, 
   \addtohist{2}{2022-09-16}{Corrected and clarified draft.}{Chris Waters}
   \addtohist{3}{2024-04-17}{Updated draft reflecting processes actually in use.}{Chris Waters}
   \addtohist{4}{2024-12-16}{Updated draft with further details on processes}{Chris Waters}
+  \addtohist{5}{2025-02-12}{Updated draft with bps templates and worked example}{Eli Rykoff}
+  \addtohist{6}{2025-04-29}{Updated draft with rucio usage for calibration distribution}{Eli Rykoff}
 }
 
 
@@ -266,9 +268,6 @@ butler export-calibs $REPO \
 \end{verbatim}
 This command exports the files into the \verb|export_directory| location, and constructs a YAML description of the calibrations and their collections.
 Exporting the ticket-level CHAINED collection will export all of the children CALIBRATION collections, making it the preferred way to export calibrations.
-It is strongly recommended that the file permissions are checked in the \verb|export_directory| to ensure that the files are world readable.
-The import process will create files with the same permissions on some repositories, so this check is essential to prevent processing problems.
-Note that the known failures where exported calibrations had incorrect permissions have all been fixed.
 
 This \verb|export_directory| must then be transferred to the location of the new repository, where it can be imported with the command
 \begin{verbatim}
@@ -329,7 +328,7 @@ The way to copy calibration files from \texttt{\/repo\/main} to the Summit, BTS,
 Note that \texttt{rucio} does not have access to the \texttt{embargo} repo.
 
 Using \texttt{rucio} involves first registering the datasets with the \texttt{rucio} service, and then creating a ``rule'' which says where the files should be synchronized.
-Once the rule is created then the \texttt{rucio} service will do the necessary synchronizations, and will place the calibrations in special S3 calibration buckets at BTS and the Summit and any other DFs that are configured.
+Once the rule is created then the \texttt{rucio} service will do the necessary synchronizations, and will place the calibrations in special S3 calibration buckets at BTS, the Summit, and at any other DFs that are configured.
 The S3 calibration buckets are configured such that only \texttt{rucio} has write access, and these files cannot be directly deleted (on purpose or accident).
 We have not yet figured out the plans for removing old calibrations.
 
@@ -342,11 +341,19 @@ But using the ticket name is very important to ensure that the dataset name is u
 
 \begin{verbatim}
 
+# Define a descriptive label
 DSLABEL=flat
 
+# This is the collection where calibs will be copied from
 COLLECTION=$INSTRUMENT/calib/$TICKET
+# This dataset name must be unique
 DATASET=Dataset/$INSTRUMENT/$DSLABEL/$TICKET
 
+# Loop over all the types of calibration products in the
+# collection. In the future rucio-register may be able
+# take an array of dataset types.
+# Be careful with this step, as you need to know all the
+# types of calibs in the collection.
 for dstype in flat; do
   rucio-register data-products \
       -s 10 \
@@ -357,16 +364,26 @@ for dstype in flat; do
       -d $DATASET
 done
 
+# Close the dataset so that no further files can be
+# associated with it.
 rucio did update --close --did ancillary:$DATASET
 
+# List the contents of the dataset to confirm that everything
+# looks as expected.
 rucio did content list --did ancillary:$DATASET
 
+# Define a rule to synchronize the files at 3 sites (note that
+# the number of copies must match the number of rucio sites).
 RULEID=$(rucio rule add \
     --rses 'SLAC_BUTLER_DISK|BASE_CALIB_DISK|SUMMIT_CALIB_DISK' \
     --did ancillary:$DATASET \
     --copies 3)
+# Show detailed information on the synchronization of the files.
 rucio rule show --rule $RULEID
 
+# Show a concise table of the synchronization state of all the
+# files and locations. This command should be run every once in
+# a while until all the files have completed synchronization.
 rucio replica list dataset --did ancillary:$DATASET
 
 \end{verbatim}
