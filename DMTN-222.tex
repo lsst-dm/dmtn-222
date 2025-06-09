@@ -43,9 +43,10 @@ This technote defines the best practices to be used for calibration generation, 
   \addtohist{1}{2022-03-21}{Initial draft.}{Chris Waters}
   \addtohist{2}{2022-09-16}{Corrected and clarified draft.}{Chris Waters}
   \addtohist{3}{2024-04-17}{Updated draft reflecting processes actually in use.}{Chris Waters}
-  \addtohist{4}{2024-12-16}{Updated draft with further details on processes}{Chris Waters}
-  \addtohist{5}{2025-02-12}{Updated draft with bps templates and worked example}{Eli Rykoff}
-  \addtohist{6}{2025-04-29}{Updated draft with rucio usage for calibration distribution}{Eli Rykoff}
+  \addtohist{4}{2024-12-16}{Updated draft with further details on processes.}{Chris Waters}
+  \addtohist{5}{2025-02-12}{Updated draft with bps templates and worked example.}{Eli Rykoff}
+  \addtohist{6}{2025-04-29}{Updated draft with rucio usage for calibration distribution.}{Eli Rykoff}
+  \addtohist{7}{2025-06-09}{Add TAXICAB tracking and photodiode ingest instructions.}{Chris Waters}
 }
 
 
@@ -481,6 +482,57 @@ butler write-curated-calibrations $REPO lsst.obs.lsst.Latiss \
 \end{verbatim}
 
 This will ensure that the calibrations can be chained into the main collection as detailed above.
+
+\subsection{Semi-curated Calibrations}
+
+We have a number of auxilliary instruments that generate ``calibration-like'' data products that are useful to provide independent measurements to support the activities of the main cameras.
+For these to be easily usable, they must be ingested into the butler with a unique dataId corresponding to a single exposure.
+This matching is performed using the instrument name and group field, and each exposure can only have one associated calibration per dataset type.
+These files are modified during ingest to add additional header information needed to support direct reads from the butler, and so until that information is added to the original files on write, they will need to be ingested with the \verb|--transfer=copy| argument.
+This transfer mode is enforced by the task's config validation step, to prevent unreadable files from being ingested.
+
+\subsubsection{Photodiode Measurements}
+
+The photodiode measurements are the first of these calibration-like data products.
+These data are also referred to as ``electrometer'' data, as the output comes from the electrometer that measures the current coming out of a photodiode that is in the same optical path as the camera, providing an independent flux calibration for their matching exposures.
+The original files are written to the Large File Annex (LFA), so the instructions for dealing with S3 data (available at \url{https://rubinobs.atlassian.net/wiki/spaces/LSSTOps/pages/45636680/USDF+S3+Bucket+Organization}) are useful for checking what data exists.
+The two main ways to do these checks are a simple \verb|ls|:
+\begin{verbatim}
+mc ls lfa/rubinobs-lfa-cp/Electrometer:103/fits/2025/06/
+\end{verbatim}
+or top copy a particular file to local disk for further study:
+\begin{verbatim}
+mc cp lfa/rubinobs-lfa-cp/Electrometer:103/fits/2025/06/07/EM103_O_20250607_000389.fits .
+\end{verbatim}
+
+Ingestion can be performed with a command like:
+\begin{verbatim}
+butler ingest-photodiode /repo/main lsst.obs.lsst.LsstCam s3://lfa@rubinobs-lfa-cp/Electrometer:103/fits/2025/06/07/ --transfer=copy
+\end{verbatim}
+This will automatically ingest into the \verb|LSSTCam/calib/photodiode| collection, using the instrument class specified on the command line to set the collection prefix.
+The ingest process uses standard \verb|lsst.resources.ResourcePath| objects to handle the path and files, which abstracts the S3 interface away, but do note the different syntax compared to the \verb|mc| commands above.
+Also note that the trailing \verb|/| in the path is required so that the files within the specified S3 directory are ingested.
+
+A further complication is related to the SAL index for the electrometers; we have four electrometers (listed below in \ref{tab:electrometers}), three of which are connected to the main telescope.
+Reiterating the constraint from above, only one photodiode measurement can be associated with an exposure, regardless of which electrometer did the measurement.
+Allowing multi-electrometer matching will need to be developed if we find a use case that requires that.
+
+\begin{tabular}{l|l|l|l}
+  \label{tab:electrometers}
+    Electrometer Name & Location & Model & Purpose \\
+    \hline
+    Electrometer:101 & MainTel & Keysight & Part of CBP (\czw{needs clarification}) \\
+    Electrometer:102 & MainTel & Keysight B2985B & Connected to output of CBP \\
+    Electrometer:103 & MainTel & Keithley 6517B & Connected to LED and laser projector for flatfield screen \\
+    Electrometer:201 & AuxTel & Keithley & Connected to lamps for the flatfield screen \\
+\end{tabular}
+
+\subsubsection{Shutter Motion Profiles}
+
+Shutter motion profiles (SMPs) are similar data products, with a file written to the LFA that needs to be matched to the appropriate exposure.
+These data can be directly associated via the \verb|obsId| key, which matches between exposure and SMP.
+Unlike the photodiode data, which can have only one per exposure, there are two SMPs per exposure, one for the shutter opening, and one for the shutter closing.
+The matching constraint still applies to these data, and so these two directions are stored in separate dataset types to prevent conflict.
 
 \section{Batch Process Submission (BPS) Templates}
 
