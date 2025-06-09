@@ -507,7 +507,9 @@ mc cp lfa/rubinobs-lfa-cp/Electrometer:103/fits/2025/06/07/EM103_O_20250607_0003
 
 Ingestion can be performed with a command like:
 \begin{verbatim}
-butler ingest-photodiode /repo/main lsst.obs.lsst.LsstCam s3://lfa@rubinobs-lfa-cp/Electrometer:103/fits/2025/06/07/ --transfer=copy
+butler ingest-photodiode /repo/main lsst.obs.lsst.LsstCam \
+    s3://lfa@rubinobs-lfa-cp/Electrometer:103/fits/2025/06/07/ \
+    --transfer=copy
 \end{verbatim}
 This will automatically ingest into the \verb|LSSTCam/calib/photodiode| collection, using the instrument class specified on the command line to set the collection prefix.
 The ingest process uses standard \verb|lsst.resources.ResourcePath| objects to handle the path and files, which abstracts the S3 interface away, but do note the different syntax compared to the \verb|mc| commands above.
@@ -519,7 +521,7 @@ Allowing multi-electrometer matching will need to be developed if we find a use 
 
 \begin{tabular}{l|l|l|l}
   \label{tab:electrometers}
-    Electrometer Name & Location & Model & Purpose \\
+    Name & Location & Model & Purpose \\
     \hline
     Electrometer:101 & MainTel & Keysight & Part of CBP (\czw{needs clarification}) \\
     Electrometer:102 & MainTel & Keysight B2985B & Connected to output of CBP \\
