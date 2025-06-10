@@ -147,7 +147,7 @@ Dense PTC curves will require many more inputs (on the order of 100 pairs of exp
 Calibrations constructed for general use should be able to use the version of the \verb|cp_pipe| tasks and pipelines on the main github branch.
 It is preferable to keep code development separate from the calibration construction, but it is expected that these will likely be coupled during commissioning.
 
-To ensure all butler repositories have a consistent set of calibrations, we have decided that only one processing location should perform the calibraion construction steps.
+To ensure all butler repositories have a consistent set of calibrations, we have decided that only one processing location should perform the calibration construction steps.
 The US Data Facility (USDF) is now operational, all calibrations used for the survey will be generated there.
 The process for transferring the calibrations to other butler sites is discussed below in Section \ref{sec:calib_export}.
 
@@ -217,7 +217,7 @@ This means that if the underlying generation collection is removed, the calibrat
 
 With the calibrations built, verified, and certified, a TAXICAB ``hailing'' ticket should be created, with a verification report attached for consideration.
 Any member of the Rubin Observatory Team is welcome to join the TAXICAB meeting, and the meeting will make decisions as a consensus.
-Any additional processing that is suggested by the TAXICAB should be defined and run prior to the TAXICAB meeting, which will have a planned weekly timeslot.
+Any additional processing that is suggested by the TAXICAB should be defined and run prior to the TAXICAB meeting, which will have a planned weekly time slot.
 Currently, this meeting is scheduled for Tuesday at 2:30pm Project Time.
 If no open TAXICAB hailing tickets exist, this meeting will be skipped.
 Scheduling a TAXICAB meeting generally indicates that the associated ticket has been marked as ``Flagged,'' as it is awaiting the decision on acceptance.
@@ -398,7 +398,7 @@ butler import $REPO s3://butler@rubinobs-calibrations/rucio/ancillary --export-f
 
 \end{verbatim}
 
-After this the calib collection chain can be updated as with main and embargo.
+After this the calibration collection chain can be updated as with main and embargo.
 
 \subsubsection{TAXICAB Tracking}
 
@@ -406,7 +406,7 @@ For TAXICAB tracking, we have a page at \url{https://rubinobs.atlassian.net/wiki
 The goal of this page is to provide a single list of all TAXICAB tickets, the associated calibration generation and deployment tickets, and the deployment status for various repositories.
 It is strongly encouraged that this is kept up-to-date as calibrations are deployed, until we have a way to fingerprint deployed calibrations to ensure uniformity across sites.
 
-\subsection{Auxilliary Data Products}
+\subsection{Auxiliary Data Products}
 
 In addition to calibrations that are directly used in the processing of data, there are other data products that are managed and distributed by the calibrations team to ensure that repositories are consistent.
 These datasets are generally added to the \verb|$INSTRUMENT/defaults| CHAINED collection, which links the raw exposure collection, the top level CHAINED calibration collection, and other standard data products that are needed for completely processing.
@@ -459,7 +459,7 @@ We do not plan to ever generate new combined calibrations automatically from the
 The \verb|cp_verify| pipeline from the daily processing should run using the ``butler+sasquatch'' butler repos, which ensure that the \verb|analysis_tools| metrics are dispatched to the summit Chronograf (https://summit-lsp.lsst.codes/chronograf).
 There will be a new dashboard available to display these metrics as they change from day-to-day, providing a way to monitor camera/system changes.
 
-The verification results from the daily calibration processing will evenutally issue LOVE-based alarms if any tests fail.
+The verification results from the daily calibration processing will eventually issue LOVE-based alarms if any tests fail.
 This should notify the calibration team members and result in an investigation to determine if updated calibrations need to be produced.
 
 \begin{figure}
