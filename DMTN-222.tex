@@ -402,7 +402,7 @@ After this the calib collection chain can be updated as with main and embargo.
 
 \subsubsection{TAXICAB Tracking}
 
-As part of the switch to TAXICAB approval of new calibrations, we have a tracking page at \url{https://rubinobs.atlassian.net/wiki/spaces/DM/pages/281673762/TAXICAB+Tracking+Page}.
+For TAXICAB tracking, we have a page at \url{https://rubinobs.atlassian.net/wiki/spaces/DM/pages/281673762/TAXICAB+Tracking+Page}.
 The goal of this page is to provide a single list of all TAXICAB tickets, the associated calibration generation and deployment tickets, and the deployment status for various repositories.
 It is strongly encouraged that this is kept up-to-date as calibrations are deployed, until we have a way to fingerprint deployed calibrations to ensure uniformity across sites.
 
@@ -485,11 +485,11 @@ This will ensure that the calibrations can be chained into the main collection a
 
 \subsection{Semi-curated Calibrations}
 
-We have a number of auxilliary instruments that generate ``calibration-like'' data products that are useful to provide independent measurements to support the activities of the main cameras.
+We have a number of auxiliary instruments that generate ``calibration-like'' data products that are useful to provide independent measurements to support the activities of the main cameras.
 For these to be easily usable, they must be ingested into the butler with a unique dataId corresponding to a single exposure.
 This matching is performed using the instrument name and group field, and each exposure can only have one associated calibration per dataset type.
 These files are modified during ingest to add additional header information needed to support direct reads from the butler, and so until that information is added to the original files on write, they will need to be ingested with the \verb|--transfer=copy| argument.
-This transfer mode is enforced by the task's config validation step, to prevent unreadable files from being ingested.
+This transfer mode is enforced by the task's configuration validation step, to prevent unreadable files from being ingested.
 
 \subsubsection{Photodiode Measurements}
 
@@ -505,7 +505,7 @@ or top copy a particular file to local disk for further study:
 mc cp lfa/rubinobs-lfa-cp/Electrometer:103/fits/2025/06/07/EM103_O_20250607_000389.fits .
 \end{verbatim}
 
-Ingestion can be performed with a command like:
+All electrometer file from 2025-06-07 forward can be ingested with a command like:
 \begin{verbatim}
 butler ingest-photodiode /repo/main lsst.obs.lsst.LsstCam \
     s3://lfa@rubinobs-lfa-cp/Electrometer:103/fits/2025/06/07/ \
