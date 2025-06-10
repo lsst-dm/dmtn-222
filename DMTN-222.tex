@@ -43,9 +43,10 @@ This technote defines the best practices to be used for calibration generation, 
   \addtohist{1}{2022-03-21}{Initial draft.}{Chris Waters}
   \addtohist{2}{2022-09-16}{Corrected and clarified draft.}{Chris Waters}
   \addtohist{3}{2024-04-17}{Updated draft reflecting processes actually in use.}{Chris Waters}
-  \addtohist{4}{2024-12-16}{Updated draft with further details on processes}{Chris Waters}
-  \addtohist{5}{2025-02-12}{Updated draft with bps templates and worked example}{Eli Rykoff}
-  \addtohist{6}{2025-04-29}{Updated draft with rucio usage for calibration distribution}{Eli Rykoff}
+  \addtohist{4}{2024-12-16}{Updated draft with further details on processes.}{Chris Waters}
+  \addtohist{5}{2025-02-12}{Updated draft with bps templates and worked example.}{Eli Rykoff}
+  \addtohist{6}{2025-04-29}{Updated draft with rucio usage for calibration distribution.}{Eli Rykoff}
+  \addtohist{7}{2025-06-09}{Add TAXICAB tracking and photodiode ingest instructions.}{Chris Waters}
 }
 
 
@@ -146,7 +147,7 @@ Dense PTC curves will require many more inputs (on the order of 100 pairs of exp
 Calibrations constructed for general use should be able to use the version of the \verb|cp_pipe| tasks and pipelines on the main github branch.
 It is preferable to keep code development separate from the calibration construction, but it is expected that these will likely be coupled during commissioning.
 
-To ensure all butler repositories have a consistent set of calibrations, we have decided that only one processing location should perform the calibraion construction steps.
+To ensure all butler repositories have a consistent set of calibrations, we have decided that only one processing location should perform the calibration construction steps.
 The US Data Facility (USDF) is now operational, all calibrations used for the survey will be generated there.
 The process for transferring the calibrations to other butler sites is discussed below in Section \ref{sec:calib_export}.
 
@@ -216,7 +217,7 @@ This means that if the underlying generation collection is removed, the calibrat
 
 With the calibrations built, verified, and certified, a TAXICAB ``hailing'' ticket should be created, with a verification report attached for consideration.
 Any member of the Rubin Observatory Team is welcome to join the TAXICAB meeting, and the meeting will make decisions as a consensus.
-Any additional processing that is suggested by the TAXICAB should be defined and run prior to the TAXICAB meeting, which will have a planned weekly timeslot.
+Any additional processing that is suggested by the TAXICAB should be defined and run prior to the TAXICAB meeting, which will have a planned weekly time slot.
 Currently, this meeting is scheduled for Tuesday at 2:30pm Project Time.
 If no open TAXICAB hailing tickets exist, this meeting will be skipped.
 Scheduling a TAXICAB meeting generally indicates that the associated ticket has been marked as ``Flagged,'' as it is awaiting the decision on acceptance.
@@ -397,9 +398,15 @@ butler import $REPO s3://butler@rubinobs-calibrations/rucio/ancillary --export-f
 
 \end{verbatim}
 
-After this the calib collection chain can be updated as with main and embargo.
+After this the calibration collection chain can be updated as with main and embargo.
 
-\subsection{Auxilliary Data Products}
+\subsubsection{TAXICAB Tracking}
+
+For TAXICAB tracking, we have a page at \url{https://rubinobs.atlassian.net/wiki/spaces/DM/pages/281673762/TAXICAB+Tracking+Page}.
+The goal of this page is to provide a single list of all TAXICAB tickets, the associated calibration generation and deployment tickets, and the deployment status for various repositories.
+It is strongly encouraged that this is kept up-to-date as calibrations are deployed, until we have a way to fingerprint deployed calibrations to ensure uniformity across sites.
+
+\subsection{Auxiliary Data Products}
 
 In addition to calibrations that are directly used in the processing of data, there are other data products that are managed and distributed by the calibrations team to ensure that repositories are consistent.
 These datasets are generally added to the \verb|$INSTRUMENT/defaults| CHAINED collection, which links the raw exposure collection, the top level CHAINED calibration collection, and other standard data products that are needed for completely processing.
@@ -452,7 +459,7 @@ We do not plan to ever generate new combined calibrations automatically from the
 The \verb|cp_verify| pipeline from the daily processing should run using the ``butler+sasquatch'' butler repos, which ensure that the \verb|analysis_tools| metrics are dispatched to the summit Chronograf (https://summit-lsp.lsst.codes/chronograf).
 There will be a new dashboard available to display these metrics as they change from day-to-day, providing a way to monitor camera/system changes.
 
-The verification results from the daily calibration processing will evenutally issue LOVE-based alarms if any tests fail.
+The verification results from the daily calibration processing will eventually issue LOVE-based alarms if any tests fail.
 This should notify the calibration team members and result in an investigation to determine if updated calibrations need to be produced.
 
 \begin{figure}
@@ -475,6 +482,59 @@ butler write-curated-calibrations $REPO lsst.obs.lsst.Latiss \
 \end{verbatim}
 
 This will ensure that the calibrations can be chained into the main collection as detailed above.
+
+\subsection{Semi-curated Calibrations}
+
+We have a number of auxiliary instruments that generate ``calibration-like'' data products that are useful to provide independent measurements to support the activities of the main cameras.
+For these to be easily usable, they must be ingested into the butler with a unique dataId corresponding to a single exposure.
+This matching is performed using the instrument name and group field, and each exposure can only have one associated calibration per dataset type.
+These files are modified during ingest to add additional header information needed to support direct reads from the butler, and so until that information is added to the original files on write, they will need to be ingested with the \verb|--transfer=copy| argument.
+This transfer mode is enforced by the task's configuration validation step, to prevent unreadable files from being ingested.
+
+\subsubsection{Photodiode Measurements}
+
+The photodiode measurements are the first of these calibration-like data products.
+These data are also referred to as ``electrometer'' data, as the output comes from the electrometer that measures the current coming out of a photodiode that is in the same optical path as the camera, providing an independent flux calibration for their matching exposures.
+The original files are written to the Large File Annex (LFA), so the instructions for dealing with S3 data (available at \url{https://rubinobs.atlassian.net/wiki/spaces/LSSTOps/pages/45636680/USDF+S3+Bucket+Organization}) are useful for checking what data exists.
+The two main ways to do these checks are a simple \verb|ls|:
+\begin{verbatim}
+mc ls lfa/rubinobs-lfa-cp/Electrometer:103/fits/2025/06/
+\end{verbatim}
+or top copy a particular file to local disk for further study:
+\begin{verbatim}
+mc cp lfa/rubinobs-lfa-cp/Electrometer:103/fits/2025/06/07/EM103_O_20250607_000389.fits .
+\end{verbatim}
+
+All electrometer file from 2025-06-07 forward can be ingested with a command like:
+\begin{verbatim}
+butler ingest-photodiode /repo/main lsst.obs.lsst.LsstCam \
+    s3://lfa@rubinobs-lfa-cp/Electrometer:103/fits/2025/06/07/ \
+    --transfer=copy
+\end{verbatim}
+This will automatically ingest into the \verb|LSSTCam/calib/photodiode| collection, using the instrument class specified on the command line to set the collection prefix.
+The ingest process uses standard \verb|lsst.resources.ResourcePath| objects to handle the path and files, which abstracts the S3 interface away, but do note the different syntax compared to the \verb|mc| commands above.
+Also note that the trailing \verb|/| in the path is required so that the files within the specified S3 directory are ingested.
+
+A further complication is related to the SAL index for the electrometers; we have four electrometers (listed below in \ref{tab:electrometers}), three of which are connected to the main telescope.
+Reiterating the constraint from above, only one photodiode measurement can be associated with an exposure, regardless of which electrometer did the measurement.
+Allowing multi-electrometer matching will need to be developed if we find a use case that requires that.
+
+\begin{tabular}{l|l|l|l}
+  \label{tab:electrometers}
+    Name & Location & Model & Purpose \\
+    \hline
+    Electrometer:101 & MainTel & Keysight & Part of CBP (\czw{needs clarification}) \\
+    Electrometer:102 & MainTel & Keysight B2985B & Connected to output of CBP \\
+    Electrometer:103 & MainTel & Keithley 6517B & Connected to LED and laser projector for flatfield screen \\
+    Electrometer:201 & AuxTel & Keithley & Connected to lamps for the flatfield screen \\
+\end{tabular}
+
+\subsubsection{Shutter Motion Profiles}
+
+Shutter motion profiles (SMPs) are similar data products, with a file written to the LFA that needs to be matched to the appropriate exposure.
+These data can be directly associated via the \verb|obsId| key, which matches between exposure and SMP.
+Unlike the photodiode data, which can have only one per exposure, there are two SMPs per exposure, one for the shutter opening, and one for the shutter closing.
+The matching constraint still applies to these data, and so these two directions are stored in separate dataset types to prevent conflict.
 
 \section{Batch Process Submission (BPS) Templates}
 
