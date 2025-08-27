@@ -14,17 +14,16 @@
 %\input{aglossary.tex}
 %\makeglossaries
 
-\title{Calibration Generation, Verification, Acceptance, and Certification.}
+\title{Calibration Generation, Verification, Acceptance, and Certification}
 
 % Optional subtitle
 % \setDocSubtitle{A subtitle}
 
-\author{%
-Chris Waters, Eli Rykoff
-}
+\input{authors}
 
 \setDocRef{DMTN-222}
 \setDocUpstreamLocation{\url{https://github.com/lsst-dm/dmtn-222}}
+\setDocDOI{10.71929/rubin/2586498}
 
 \date{\vcsDate}
 
@@ -152,7 +151,7 @@ The US Data Facility (USDF) is now operational, all calibrations used for the su
 The process for transferring the calibrations to other butler sites is discussed below in Section \ref{sec:calib_export}.
 
 \subsection{Verification}
-A verification report is then generated from the generation and verification collections, and will be supplied to the Telescope And auXiliary Instrumentation Calibration Acceptance Board (TAXICAB), as defined in \url{https://rtn-075.lsst.io/}.
+A verification report is then generated from the generation and verification collections, and will be supplied to the Telescope And auXiliary Instrumentation Calibration Acceptance Board (TAXICAB), as defined in \citeds{RTN-075}.
 
 Once the proposed calibrations have been generated, the calibration should be used for processing using the \verb|cp_verify| tasks and pipelines.
 These tasks measure quality metrics from those processed exposures, and identify any test failures.
@@ -162,7 +161,7 @@ In running the \verb|cp_verify| tasks, the input butler collections specified sh
 
 Exposures from outside the set used for construction should be added to provide insight into the expected validity range for the calibration.
 For calibrations generated to correct for known camera changes (such as a sequencer upgrade), we will likely need to generate the combined calibration from a limited set of inputs, and will therefore rely on \verb|cp_verify| metrics to monitor those calibrations.
-In cases where we have multiple days of observations that can be used, including exposures from multiple dates in the verification set can be used to 
+In cases where we have multiple days of observations that can be used, including exposures from multiple dates in the verification set can be used to
 As long as the metrics on those exposures remain within the limits defined in DMTN-101, the calibration may continue to be valid for the date range including those additional exposures.
 This can be used to establish the valid date ranges to be used when certifying the calibration.
 
@@ -456,7 +455,7 @@ The daily calibration processing will simply verify these newly taken exposures 
 This allows the long-term stability of the calibrations to be monitored.
 We do not plan to ever generate new combined calibrations automatically from the daily calibration scripts.
 
-The \verb|cp_verify| pipeline from the daily processing should run using the ``butler+sasquatch'' butler repos, which ensure that the \verb|analysis_tools| metrics are dispatched to the summit Chronograf (https://summit-lsp.lsst.codes/chronograf).
+The \verb|cp_verify| pipeline from the daily processing should run using the ``butler+sasquatch'' butler repos, which ensure that the \verb|analysis_tools| metrics are dispatched to the summit Chronograf (\url{https://summit-lsp.lsst.codes/chronograf}).
 There will be a new dashboard available to display these metrics as they change from day-to-day, providing a way to monitor camera/system changes.
 
 The verification results from the daily calibration processing will eventually issue LOVE-based alarms if any tests fail.
@@ -519,7 +518,7 @@ A further complication is related to the SAL index for the electrometers; we hav
 Reiterating the constraint from above, only one photodiode measurement can be associated with an exposure, regardless of which electrometer did the measurement.
 Allowing multi-electrometer matching will need to be developed if we find a use case that requires that.
 
-\begin{tabular}{l|l|l|l}
+\begin{tabular}{l|l|l|p{0.4\textwidth}}
   \label{tab:electrometers}
     Name & Location & Model & Purpose \\
     \hline
@@ -538,9 +537,9 @@ The matching constraint still applies to these data, and so these two directions
 
 \section{Batch Process Submission (BPS) Templates}
 
-We have put together a set of convenient bps\footnote{https://pipelines.lsst.io/modules/lsst.ctrl.bps/quickstart.html} template files that have been tested at USDF but should also be suitable testing at other locations.
+We have put together a set of convenient bps\footnote{\url{https://pipelines.lsst.io/modules/lsst.ctrl.bps/quickstart.html} and see also \citet{2022arXiv221115795G} for background.} template files that have been tested at USDF but should also be suitable testing at other locations.
 These templates are intended for batch processing of calibration construction and verification for both user collection testing and final calibration production.
-This section has a brief overview, but please see the README files at \texttt{https://github.com/lsst/cp\_pipe/tree/main/bps/templates/README.md} and \texttt{https://github.com/lsst/cp\_verify/tree/main/bps/templates/README.md} for up-to-date information.
+This section has a brief overview, but please see the README files at \url{https://github.com/lsst/cp_pipe/tree/main/bps/templates/README.md} and \url{https://github.com/lsst/cp_verify/tree/main/bps/templates/README.md} for up-to-date information.
 Note that the templates assume that each calibration is certified into the overall calibration chain called \texttt{\$\{USER\_CALIB\_PREFIX\}\$\{INSTRUMENT\}\/calib\/\$\{TICKET\}\/\$\{TAG\}} between steps.
 A walkthrough example is in Section~\ref{sec:example}.
 
