@@ -335,30 +335,30 @@ We have not yet figured out the plans for removing old calibrations.
 At the current time \texttt{rucio} will only synchronize the files, and it is the responsibility of the person doing the deployment to copy over the above \texttt{export.yaml} and do the ingestion and the final collection chaining.
 In the near future we expect the ingestion will be done automatically, though explicit deployment chaining is going to be a manual task for the foreseeable future.
 
-The following is how a set of flats can be synchronized.
-Note that the \texttt{DSLABEL} can be anything.
-But using the ticket name is very important to ensure that the dataset name is unique for each set of registered calibrations.
+Currently, there is work being done to create automatic Rucio ``subscriptions'' such that the calibration group merely define a dataset and the automated system handles the distribution.
+This depends on pre-determined naming conventions.
+For calibrations to be distributed to the Summit and BTS, the \texttt{DATASET} name should be of the form \texttt{Dataset/\$INSTRUMENT/calib/\$TICKET}, matching the chained calibration collection name.
+For calibrations that are not to be distributed to the Summit and BTS, and only the other DFs, the \texttt{DATASET} name should be of the form \texttt{Dataset/historical/\$INSTRUMENT/calib/\$TICKET}, matching the chained calibration collection name.
+These are calibrations that are not to be used for online processing, but only for (e.g.) data releases where the calibrations only apply to older data.
+
+The following is how a set of darks and flats can be synchronized.
 
 \begin{verbatim}
-
-# Define a descriptive label
-DSLABEL=flat
-
 # This is the collection where calibs will be copied from
 COLLECTION=$INSTRUMENT/calib/$TICKET
 # This dataset name must be unique
-DATASET=Dataset/$INSTRUMENT/$DSLABEL/$TICKET
+DATASET=Dataset/$INSTRUMENT/calib/$TICKET
 
 # Loop over all the types of calibration products in the
 # collection. In the future rucio-register may be able
 # take an array of dataset types.
 # Be careful with this step, as you need to know all the
 # types of calibs in the collection.
-for dstype in flat; do
+for dstype in dark flat; do
   rucio-register data-products \
       -s 10 \
       -C /sdf/data/rubin/shared/calibration_archive/rucio/main-calib-config.yaml \
-      -r /repo/main \
+      -r main \
       -t $dstype \
       -c $COLLECTION \
       -d $DATASET
@@ -366,25 +366,26 @@ done
 
 # Close the dataset so that no further files can be
 # associated with it.
-rucio did update --close --did ancillary:$DATASET
+rucio did update --close ancillary:$DATASET
 
 # List the contents of the dataset to confirm that everything
 # looks as expected.
-rucio did content list --did ancillary:$DATASET
+rucio did content list ancillary:$DATASET
 
 # Define a rule to synchronize the files at 3 sites (note that
 # the number of copies must match the number of rucio sites).
 RULEID=$(rucio rule add \
+    --copies 3 \
     --rses 'SLAC_BUTLER_DISK|BASE_CALIB_DISK|SUMMIT_CALIB_DISK' \
-    --did ancillary:$DATASET \
-    --copies 3)
+    ancillary:$DATASET \
+    )
 # Show detailed information on the synchronization of the files.
 rucio rule show --rule $RULEID
 
 # Show a concise table of the synchronization state of all the
 # files and locations. This command should be run every once in
 # a while until all the files have completed synchronization.
-rucio replica list dataset --did ancillary:$DATASET
+rucio replica list dataset ancillary:$DATASET
 
 \end{verbatim}
 
