@@ -249,8 +249,8 @@ Upon approval of the TAXICAB, the calibrations can be distributed for use.
 A separate distribution ticket should be created to handle this work, and linked to both the construction ticket and the TAXICAB ticket.
 
 There are three different distributions that need to be handled.
-First, calibrations in \texttt{\/repo\/main} need to be chained into the default calibration collection.
-Second, calibrations generated in \texttt{\/repo\/main} need to be copied over to the \texttt{embargo} repo at USDF if they need to be applied to embargoed images.
+First, calibrations in \texttt{main} need to be chained into the default calibration collection.
+Second, calibrations generated in \texttt{main} need to be copied over to the \texttt{embargo} repo at USDF if they need to be applied to embargoed images.
 Third, calibrations need to be copied to the Summit, Base Test Stand, and other Data Facilities via \texttt{rucio}.
 In the latter two cases, after calibrations have been copied they need to be chained into the default calibration collection.
 
@@ -324,7 +324,7 @@ The following table lists the current set of facilities, repositories, and which
 
 \subsubsection{Distribution With Rucio}
 
-The way to copy calibration files from \texttt{\/repo\/main} to the Summit, BTS, and the other DFs is via \texttt{rucio}.
+The way to copy calibration files from \texttt{main} to the Summit, BTS, and the other DFs is via \texttt{rucio}.
 Note that \texttt{rucio} does not have access to the \texttt{embargo} repo.
 
 Using \texttt{rucio} involves first registering the datasets with the \texttt{rucio} service, and then creating a ``rule'' which says where the files should be synchronized.
@@ -550,7 +550,7 @@ At the writing of this documentation these include:
 \item{\texttt{export USER\_CALIB\_PREFIX=""} or \texttt{export USER\_CALIB\_PREFIX=\"u\/erykoff\"}: Set to an empty string for official calibrations, or the user collection prefix with trailing slash.}
 \item{\texttt{export INSTRUMENT=LSSTComCam}: The name of the instrument.}
 \item{\texttt{export TICKET=DM-46562}: The name of the ticket associated with the calib construction.}
-\item{\texttt{export REPO=\/repo\/main}: The name of the butler repository to generate calibs.}
+\item{\texttt{export REPO=main}: The name of the butler repository to generate calibs.}
 \item{\texttt{export RAW\_COLLECTION=LSSTComCam\/raw\/all}: The name of the raw data collection.}
 \item{\texttt{export CALIB\_COLLECTIONS=LSSTComCam\/calib\/DM-46825}: Comma-separated list of curated or previously generated calibration collections to use as a starting point.}
 \item{\texttt{export TAG=newCalibs}: A human-readable tag to help indicate why a set of calibs were built (matched to the ticket number).}
