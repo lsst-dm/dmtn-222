@@ -150,6 +150,22 @@ To ensure all butler repositories have a consistent set of calibrations, we have
 The US Data Facility (USDF) is now operational, all calibrations used for the survey will be generated there.
 The process for transferring the calibrations to other butler sites is discussed below in Section \ref{sec:calib_export}.
 
+\subsection{LSSTCam Flats}
+
+At the present time, we have two ways of generating ``white light'' dome flats with LSSTCam data.
+In the future, we will be adding monochromatic flats from scans with the tunable laser.
+
+The term ``white light'' refers to illumination with the calibration system LED projector, with broad (``white'') and not narrow (laser) illumination.
+The light itself is not white, and there are 10 LEDs covering the wavelength range of the ugrizy filter system.
+
+The original configuration (also used for the daily flats) can illuminate each of the griz filters with 2 LEDs at a time.
+These can be processed with the \texttt{cpFlat.yaml} pipeline and the \texttt{bps\_flat\_[band].yaml} templates.
+
+The new configuration produces two sets of flats for each filter, one with a bluer LED and one with a redder LED (each appropriate for the filter).
+These red and blue flats then get individually processed and weighted and combined at the end.
+We call these ``anaglyph'' flats, in an analogy with the anaglyph stereoscopic photographic technique where two red/blue images are overlaid and viewed with special red/blue glasses.
+These can be processed with the \texttt{cpFlatAnaglyph.yaml} pipeline and the \texttt{bps\_flat\_anaglyph\_[band].yaml} templates.
+
 \subsection{Verification}
 A verification report is then generated from the generation and verification collections, and will be supplied to the Telescope And auXiliary Instrumentation Calibration Acceptance Board (TAXICAB), as defined in \citeds{RTN-075}.
 
