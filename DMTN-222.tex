@@ -411,7 +411,8 @@ It is very important to get the file prefix correct, as well as to use the \text
 
 \begin{verbatim}
 
-butler import $REPO s3://butler@rubinobs-calibrations/rucio/ancillary --export-file `pwd`/export.yaml -t direct
+butler import $REPO s3://butler@rubinobs-calibrations/rucio/ancillary \
+       --export-file `pwd`/export.yaml -t direct
 
 \end{verbatim}
 
@@ -669,16 +670,16 @@ bps submit $CP_PIPE_DIR/bps/templates/bps_biasBootstrap.yaml
 
 # Download a couple of images to check them.
 butler retrieve-artifacts $REPO images \
-    -d biasBootstrap \
-    --collections ${USER_CALIB_PREFIX}$INSTRUMENT/calib/$TICKET/$TAG/biasBootstrapGen.$RERUN/run${BOOTSTRAP_RUN_NUMBER} \
-    --where "instrument='${INSTRUMENT}' and detector in (5, 8)" --no-preserve-path
+ -d biasBootstrap \
+ --collections ${USER_CALIB_PREFIX}$INSTRUMENT/calib/$TICKET/$TAG/biasBootstrapGen.$RERUN/run${BOOTSTRAP_RUN_NUMBER} \
+ --where "instrument='${INSTRUMENT}' and detector in (5, 8)" --no-preserve-path
 
 bps submit $CP_PIPE_DIR/bps/templates/bps_darkBootstrap.yaml
 
 butler retrieve-artifacts $REPO images \
-    -d darkBootstrap \
-    --collections ${USER_CALIB_PREFIX}$INSTRUMENT/calib/$TICKET/$TAG/darkBootstrapGen.$RERUN/run${BOOTSTRAP_RUN_NUMBER} \
-    --where "instrument='${INSTRUMENT}' and detector in (5, 8)" --no-preserve-path
+ -d darkBootstrap \
+ --collections ${USER_CALIB_PREFIX}$INSTRUMENT/calib/$TICKET/$TAG/darkBootstrapGen.$RERUN/run${BOOTSTRAP_RUN_NUMBER} \
+ --where "instrument='${INSTRUMENT}' and detector in (5, 8)" --no-preserve-path
 
 bps submit $CP_PIPE_DIR/bps/templates/bps_flatBootstrap.yaml
 
@@ -1004,15 +1005,35 @@ Shifting a calibration by a fixed amount does not generally result in a subset o
 The following block presents some examples of the use of these commands to update calibrations, using the commands that were used as part of DM-55577 and TAXICAB-68.
 \begin{footnotesize}
 \begin{verbatim}
-
 # An example probe, truncated for simplicity.
 # Executing this command will return all detectors and all calibration types.
 butler calibtool probe $REPO --collections LSSTCam/calib/DM-53620
-   calib_type                                                    gen_run                                                                                     calib_collection                                                                  calib_dataId                                              calib_timespan
---------------- --------------------------------------------------------------------------------------------------------- ------------------------------------------------------------------------------------- ------------------------------------------------------------------------- ------------------------------------------
-bias            LSSTCam/calib/DM-53620/3s_v1_dp2_v2/biasGen.20251215c/20251218T023846Z                                    LSSTCam/calib/DM-53620/3s_v1_dp2_v2/bias.20251215c                                    {instrument: 'LSSTCam', detector: 84}                                      [2025-07-03T00:00:00, ∞)
-gain_correction LSSTCam/calib/DM-53620/3s_v1_dp2_v2_gain_correction_20250720/gainCorrectionGen.20251215a/20251218T183917Z LSSTCam/calib/DM-53620/3s_v1_dp2_v2_gain_correction_20250720/gainCorrection.20251215a {instrument: 'LSSTCam', detector: 84}                                      [2025-07-03T00:00:00, 2025-08-11T00:00:00)
+\end{verbatim}
 
+\begin{table}
+  \scriptsize
+  \caption{Output of butler calibtool probe.  This table has been reformatted to fit this document.}
+  \begin{tabular}{l|l}
+    \hline
+    calib\_type & gen\_run \\
+    & calib\_collection \\
+    & calib\_dataId\\
+    & calib\_timespan \\
+    \hline
+    bias        &\verb|LSSTCam/calib/DM-53620/3s_v1_dp2_v2/biasGen.20251215c/20251218T023846Z|  \\
+                &\verb|LSSTCam/calib/DM-53620/3s_v1_dp2_v2/bias.20251215c| \\
+                & {instrument: 'LSSTCam', detector: 84} \\
+                & [2025-07-03T00:00:00, ∞) \\
+    \hline
+    gain\_correction &\verb|LSSTCam/calib/DM-53620/3s_v1_dp2_v2_gain_correction_20250720/gainCorrectionGen.20251215a/20251218T183917Z| \\
+                & \verb|LSSTCam/calib/DM-53620/3s_v1_dp2_v2_gain_correction_20250720/gainCorrection.20251215a| \\
+                & {instrument: 'LSSTCam', detector: 84} \\
+                & [2025-07-03T00:00:00, 2025-08-11T00:00:00)\\
+    \hline
+  \end{tabular}
+\end{table}
+
+\begin{verbatim}
 # A simple recertification.
 # As this is shifting a validity range with an infinite extent, the new validity range is a subset of the old.
 butler calibtool recertify $REPO --collections LSSTCam/calib/DM-53620/3s_v1_dp2_v2/bias.20251215c \
@@ -1021,12 +1042,14 @@ butler calibtool recertify $REPO --collections LSSTCam/calib/DM-53620/3s_v1_dp2_
 
 # A more complicated recertification requiring decertification.
 # This is not a subset of the old range, and so needs a two-step process.
-butler calibtool decertify $REPO --collections LSSTCam/calib/DM-53620/3s_v1_dp2_v2_gain_correction_20250720/gainCorrection.20251215a \
-       -d gain_correction --begin-date 2025-07-03T00:00:00 --end-date 2025-08-11T00:00:00 --dry-run False
+butler calibtool decertify $REPO
+  --collections LSSTCam/calib/DM-53620/3s_v1_dp2_v2_gain_correction_20250720/gainCorrection.20251215a \
+  -d gain_correction --begin-date 2025-07-03T00:00:00 --end-date 2025-08-11T00:00:00 --dry-run False
+
 butler certify-calibrations $REPO --begin-date 2025-07-03T12:00:00 --end-date 2025-08-11T12:00:00 \
-       LSSTCam/calib/DM-53620/3s_v1_dp2_v2_gain_correction_20250720/gainCorrectionGen.20251215a/20251218T183917Z \
-       LSSTCam/calib/DM-53620/3s_v1_dp2_v2_gain_correction_20250720/gainCorrection.20251215a \
-       gain_correction
+ LSSTCam/calib/DM-53620/3s_v1_dp2_v2_gain_correction_20250720/gainCorrectionGen.20251215a/20251218T183917Z \
+ LSSTCam/calib/DM-53620/3s_v1_dp2_v2_gain_correction_20250720/gainCorrection.20251215a \
+ gain_correction
 \end{verbatim}
 \end{footnotesize}
 
