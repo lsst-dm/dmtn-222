@@ -46,6 +46,7 @@ This technote defines the best practices to be used for calibration generation, 
   \addtohist{5}{2025-02-12}{Updated draft with bps templates and worked example.}{Eli Rykoff}
   \addtohist{6}{2025-04-29}{Updated draft with rucio usage for calibration distribution.}{Eli Rykoff}
   \addtohist{7}{2025-06-09}{Add TAXICAB tracking and photodiode ingest instructions.}{Chris Waters}
+  \addtohist{8}{2026-07-22}{Add calibtool utility descriptions.}{Chris Waters}
 }
 
 
@@ -410,7 +411,8 @@ It is very important to get the file prefix correct, as well as to use the \text
 
 \begin{verbatim}
 
-butler import $REPO s3://butler@rubinobs-calibrations/rucio/ancillary --export-file `pwd`/export.yaml -t direct
+butler import $REPO s3://butler@rubinobs-calibrations/rucio/ancillary \
+       --export-file `pwd`/export.yaml -t direct
 
 \end{verbatim}
 
@@ -668,16 +670,16 @@ bps submit $CP_PIPE_DIR/bps/templates/bps_biasBootstrap.yaml
 
 # Download a couple of images to check them.
 butler retrieve-artifacts $REPO images \
-    -d biasBootstrap \
-    --collections ${USER_CALIB_PREFIX}$INSTRUMENT/calib/$TICKET/$TAG/biasBootstrapGen.$RERUN/run${BOOTSTRAP_RUN_NUMBER} \
-    --where "instrument='${INSTRUMENT}' and detector in (5, 8)" --no-preserve-path
+ -d biasBootstrap \
+ --collections ${USER_CALIB_PREFIX}$INSTRUMENT/calib/$TICKET/$TAG/biasBootstrapGen.$RERUN/run${BOOTSTRAP_RUN_NUMBER} \
+ --where "instrument='${INSTRUMENT}' and detector in (5, 8)" --no-preserve-path
 
 bps submit $CP_PIPE_DIR/bps/templates/bps_darkBootstrap.yaml
 
 butler retrieve-artifacts $REPO images \
-    -d darkBootstrap \
-    --collections ${USER_CALIB_PREFIX}$INSTRUMENT/calib/$TICKET/$TAG/darkBootstrapGen.$RERUN/run${BOOTSTRAP_RUN_NUMBER} \
-    --where "instrument='${INSTRUMENT}' and detector in (5, 8)" --no-preserve-path
+ -d darkBootstrap \
+ --collections ${USER_CALIB_PREFIX}$INSTRUMENT/calib/$TICKET/$TAG/darkBootstrapGen.$RERUN/run${BOOTSTRAP_RUN_NUMBER} \
+ --where "instrument='${INSTRUMENT}' and detector in (5, 8)" --no-preserve-path
 
 bps submit $CP_PIPE_DIR/bps/templates/bps_flatBootstrap.yaml
 
@@ -969,6 +971,85 @@ $CP_VERIFY_DIR/bin/cpv_report.py -r $REPO \
     -c ${USER_CALIB_PREFIX}${INSTRUMENT}/calib/${TICKET}/${TAG}/flatGen-y.${RERUN}
 
 
+\end{verbatim}
+\end{footnotesize}
+
+\section{Utilities}
+
+The \verb|cp_butler| package contains a set of utilities intended to make management of calibration products more convenient.
+These utilities are not of general use, and so have not previously been available for the command line.
+After setting up the package, added subcommands will become available for \verb|butler|, under the \verb|calibtool| name space.
+This section will describe these added subcommands, with some details about how they function.
+Note that subcommands that update the database require an explicit \verb|--dry-run False| argument.
+
+% something something TAXICAB.
+
+\subsection{probe}
+The \verb|butler calibtool probe| subcommand queries the association table for calibration datasets, and returns a summary of that data.
+Most routine uses of this subcommand will be used to identify the RUN collection associated with a certified calibration, and to retrieve the timespan for which the calibration is certified.
+
+\subsection{decertify}
+Certification errors have happened in the past, and although the butler API does support decertification, those errors have largely been dealt with by removing the incorrect CALIBRATION collection from the standard collection chains.
+This subcommand provides command line access to that API, with the addition of a series of checks to help prevent further errors.
+Only single CALIBRATION collections can be supplied, to prevent any unintended consequences when recursing through CHAINED collections.
+RUN collections do not have the requisite association table information containing certified dates, so they are also not allowed.
+The begin and end dates for the calibration to be decertified must be specified if they are defined (and not infinite), as these are used to select which datasets to decertify.
+
+\subsection{recertify}
+The butler API allows for the certification date range to be updated ``in place,'' without fully removing the certification.
+The \verb|butler calibtool recertify| subcommand takes advantage of this method.
+All of the same restrictions apply as with \verb|decertify|, with the added constraint that the updated validity date range must be a subset of the existing validity range.
+Shifting a calibration by a fixed amount does not generally result in a subset of the existing validity, so calibrations that need this kind of change may need to be decertified and passed to `butler certify-calibrations` again.
+
+\subsection{Examples}
+The following block presents some examples of the use of these commands to update calibrations, using the commands that were used as part of DM-55577 and TAXICAB-68.
+\begin{footnotesize}
+\begin{verbatim}
+# An example probe, truncated for simplicity.
+# Executing this command will return all detectors and all calibration types.
+butler calibtool probe $REPO --collections LSSTCam/calib/DM-53620
+\end{verbatim}
+
+\begin{table}
+  \scriptsize
+  \caption{Output of butler calibtool probe.  This table has been reformatted to fit this document.}
+  \begin{tabular}{l|l}
+    \hline
+    calib\_type & gen\_run \\
+    & calib\_collection \\
+    & calib\_dataId\\
+    & calib\_timespan \\
+    \hline
+    bias        &\verb|LSSTCam/calib/DM-53620/3s_v1_dp2_v2/biasGen.20251215c/20251218T023846Z|  \\
+                &\verb|LSSTCam/calib/DM-53620/3s_v1_dp2_v2/bias.20251215c| \\
+                & {instrument: 'LSSTCam', detector: 84} \\
+                & [2025-07-03T00:00:00, ∞) \\
+    \hline
+    gain\_correction &\verb|LSSTCam/calib/DM-53620/3s_v1_dp2_v2_gain_correction_20250720/gainCorrectionGen.20251215a/20251218T183917Z| \\
+                & \verb|LSSTCam/calib/DM-53620/3s_v1_dp2_v2_gain_correction_20250720/gainCorrection.20251215a| \\
+                & {instrument: 'LSSTCam', detector: 84} \\
+                & [2025-07-03T00:00:00, 2025-08-11T00:00:00)\\
+    \hline
+  \end{tabular}
+\end{table}
+
+\begin{verbatim}
+# A simple recertification.
+# As this is shifting a validity range with an infinite extent, the new validity range is a subset of the old.
+butler calibtool recertify $REPO --collections LSSTCam/calib/DM-53620/3s_v1_dp2_v2/bias.20251215c \
+       -d bias --begin-date 2025-07-03T00:00:00 --new-begin-date 2025-07-03T12:00:00 \
+       --dry-run False
+
+# A more complicated recertification requiring decertification.
+# This is not a subset of the old range, and so needs a two-step process.
+butler calibtool decertify $REPO
+  --collections LSSTCam/calib/DM-53620/3s_v1_dp2_v2_gain_correction_20250720/gainCorrection.20251215a \
+  -d gain_correction --begin-date 2025-07-03T00:00:00 --end-date 2025-08-11T00:00:00 --dry-run False
+
+butler certify-calibrations $REPO --begin-date 2025-07-03T12:00:00 --end-date 2025-08-11T12:00:00 \
+ LSSTCam/calib/DM-53620/3s_v1_dp2_v2_gain_correction_20250720/gainCorrectionGen.20251215a/20251218T183917Z \
+ LSSTCam/calib/DM-53620/3s_v1_dp2_v2_gain_correction_20250720/gainCorrection.20251215a \
+ gain_correction
 \end{verbatim}
 \end{footnotesize}
 
